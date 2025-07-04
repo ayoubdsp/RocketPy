@@ -1899,8 +1899,8 @@ class Rocket:
         power_off_drag = self.power_off_drag
         power_on_drag = self.power_on_drag
         if discretize:
-            power_off_drag = power_off_drag.set_discrete(0, 2, 50, mutate_self=False)
-            power_on_drag = power_on_drag.set_discrete(0, 2, 50, mutate_self=False)
+            power_off_drag = power_off_drag.set_discrete(0, 4, 50, mutate_self=False)
+            power_on_drag = power_on_drag.set_discrete(0, 4, 50, mutate_self=False)
 
         rocket_dict = {
             "radius": self.radius,
@@ -1940,7 +1940,7 @@ class Rocket:
                 thrust_to_weight = thrust_to_weight.set_discrete_based_on_model(
                     self.motor.thrust, mutate_self=False
                 )
-                cp_position = cp_position.set_discrete(0, 2, 25, mutate_self=False)
+                cp_position = cp_position.set_discrete(0, 4, 25, mutate_self=False)
                 stability_margin = stability_margin.set_discrete(
                     (0, self.motor.burn_time[0]),
                     (2, self.motor.burn_time[1]),
