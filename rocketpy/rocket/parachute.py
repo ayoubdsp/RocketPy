@@ -92,7 +92,6 @@ class Parachute:
         Function of noisy_pressure_signal.
     Parachute.clean_pressure_signal_function : Function
         Function of clean_pressure_signal.
-<<<<<<< HEAD
     Parachute.radius : float
         Length of the non-unique semi-axis (radius) of the inflated hemispheroid
         parachute in meters.
@@ -107,15 +106,6 @@ class Parachute:
     Parachute.added_mass_coefficient : float
         Coefficient used to calculate the added-mass due to dragged air. It is
         calculated from the porosity of the parachute.
-=======
-    Parachute.parachute_radius : float
-        Radius of the inflated parachute in meters.
-    Parachute.parachute_height : float
-        Height of the inflated parachute in meters.
-    Parachute.porosity : float
-        Porosity of the parachute material, which is a measure of how much air can
-        pass through the parachute material.
->>>>>>> 78ef92e7 (ENH: added new parameters into add_parachute method in Rocket class)
     """
 
     def __init__(
@@ -181,7 +171,6 @@ class Parachute:
             The values are used to add noise to the pressure signal which is
             passed to the trigger function. Default value is ``(0, 0, 0)``.
             Units are in Pa.
-<<<<<<< HEAD
         radius : float, optional
             Length of the non-unique semi-axis (radius) of the inflated hemispheroid
             parachute. Default value is 1.5.
@@ -195,18 +184,6 @@ class Parachute:
             in [0, 1]. Affects only the added-mass scaling during descent; it does
             not change ``cd_s`` (drag). The default, 0.0432, yields an added-mass
             of 1.0 (“neutral” behavior).
-=======
-        parachute_radius : float, optional
-            Radius of the inflated parachute. Default value is 1.5.
-            Units are in meters.
-        parachute_height : float, optional
-            Height of the inflated parachute. Default value is the radius parachute.
-            Units are in meters.
-        porosity : float, optional
-            Porosity of the parachute material, which is a measure of how much air can
-            pass through the parachute material.
-            Default value is 0.0432 (for consistency with previous versions).
->>>>>>> 78ef92e7 (ENH: added new parameters into add_parachute method in Rocket class)
         """
         self.name = name
         self.cd_s = cd_s

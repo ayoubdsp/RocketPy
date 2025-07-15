@@ -1536,7 +1536,6 @@ class Rocket:
             The values are used to add noise to the pressure signal which is
             passed to the trigger function. Default value is (0, 0, 0). Units
             are in pascal.
-<<<<<<< HEAD
         radius : float, optional
             Length of the non-unique semi-axis (radius) of the inflated hemispheroid
             parachute. Default value is 1.5.
@@ -1550,19 +1549,7 @@ class Rocket:
             in [0, 1]. Affects only the added-mass scaling during descent; it does
             not change ``cd_s`` (drag). The default, 0.0432, yields an added-mass
             of 1.0 (“neutral” behavior).
-=======
-        parachute_radius : float, optional
-            Radius of the inflated parachute. Default value is 1.5.
-            Units are in meters.
-        parachute_height : float, optional
-            Height of the inflated parachute. Default value is the radius parachute.
-            Units are in meters.
-        porosity : float, optional
-            Porosity of the parachute material, which is a measure of how much air can
-            pass through the parachute material.
-            Default value is 0.0432 (for consistency with previous versions).
->>>>>>> 78ef92e7 (ENH: added new parameters into add_parachute method in Rocket class)
-
+            
         Returns
         -------
         parachute : Parachute
