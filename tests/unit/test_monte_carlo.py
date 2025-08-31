@@ -24,6 +24,33 @@ def test_stochastic_environment_create_object_with_wind_x(stochastic_environment
     # TODO: add a new test for the special case of ensemble member
 
 
+def test_monte_carlo_plots_all_with_filename(monte_carlo_calisto_pre_loaded, tmp_path):
+    """Tests the all method of the MonteCarlo plots with filename parameter.
+
+    Parameters
+    ----------
+    monte_carlo_calisto_pre_loaded : MonteCarlo
+        A MonteCarlo object with pre-loaded results, this is a pytest fixture.
+    tmp_path : Path
+        Temporary directory path for saving test files.
+    """
+    # Test without filename (should work as before)
+    result = monte_carlo_calisto_pre_loaded.plots.all()
+    assert result is None
+
+    # Test with filename - save to temporary directory
+    filename = tmp_path / "test_monte_carlo_plot.png"
+    result = monte_carlo_calisto_pre_loaded.plots.all(filename=str(filename))
+    assert result is None
+
+    # Test with specific keys and filename
+    filename_apogee = tmp_path / "test_apogee_plot.png"
+    result = monte_carlo_calisto_pre_loaded.plots.all(
+        keys="apogee", filename=str(filename_apogee)
+    )
+    assert result is None
+
+
 def test_stochastic_solid_motor_create_object_with_impulse(stochastic_solid_motor):
     """Tests the stochastic solid motor object by checking if the total impulse
     can be generated properly. The goal is to check if the create_object()

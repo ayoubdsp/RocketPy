@@ -1,7 +1,10 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 from ..tools import generate_monte_carlo_ellipses, import_optional_dependency
+from .plot_helpers import show_or_save_plot
 
 
 class _MonteCarloPlots:
@@ -147,7 +150,7 @@ class _MonteCarloPlots:
         else:
             plt.show()
 
-    def all(self, keys=None):
+    def all(self, keys=None, *, filename=None):
         """
         Plot the histograms of the Monte Carlo simulation results.
 
@@ -156,6 +159,13 @@ class _MonteCarloPlots:
         keys : str, list or tuple, optional
             The keys of the results to be plotted. If None, all results will be
             plotted. Default is None.
+        filename : str | None, optional
+            The path the plot should be saved to, by default None. If provided,
+            the plot will be saved instead of displayed. When multiple plots are
+            generated (one per key), the key name will be appended to the filename.
+            Supported file endings are: eps, jpg, jpeg, pdf, pgf, png, ps, raw,
+            rgba, svg, svgz, tif, tiff and webp (these are the formats supported
+            by matplotlib).
 
         Returns
         -------
@@ -173,6 +183,7 @@ class _MonteCarloPlots:
                 )
         else:
             raise ValueError("The 'keys' argument must be a string, list, or tuple.")
+
         for key in keys:
             # Create figure with GridSpec
             fig = plt.figure(figsize=(8, 8))
@@ -194,7 +205,16 @@ class _MonteCarloPlots:
             ax1.set_xticks([])
 
             plt.tight_layout()
-            plt.show()
+
+            # Handle filename for multiple plots
+            if filename is not None:
+                # For multiple keys, append the key name to the filename
+                filepath = Path(filename)
+                # Use the full key name to avoid collisions between x_impact and y_impact
+                key_filename = filepath.parent / f"{filepath.stem}_{key}{filepath.suffix}"
+                show_or_save_plot(str(key_filename))
+            else:
+                show_or_save_plot(filename)
 
     def plot_comparison(self, other_monte_carlo):
         """
