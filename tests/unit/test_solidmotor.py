@@ -279,3 +279,40 @@ def test_reshape_thrust_curve_asserts_resultant_thrust_curve_correct(
 
     assert thrust_reshaped[1][1] == 100 * (tuple_parametric[1] / 7539.1875)
     assert thrust_reshaped[7][1] == 2034 * (tuple_parametric[1] / 7539.1875)
+
+
+def test_only_radial_burn_parameter_effect(cesaroni_m1670):
+    """Test if the only_radial_burn flag is properly set and affects burn area calculation."""
+    motor = cesaroni_m1670
+    motor.only_radial_burn = True
+    assert motor.only_radial_burn is True
+
+    # When only_radial_burn is active, burn_area should consider only radial area
+    # Use the motor's burn_area method directly to avoid code duplication
+    burn_area_radial = motor.burn_area(0)
+    
+    # Manually calculate expected radial burn area for verification
+    expected_radial_area = (
+        2 * np.pi * (motor.grain_inner_radius(0) * motor.grain_height(0)) * motor.grain_number
+    )
+    assert np.isclose(burn_area_radial, expected_radial_area, atol=1e-12)
+
+
+def test_evaluate_geometry_updates_properties(cesaroni_m1670):
+    """Check if after instantiation, grain_inner_radius and grain_height are valid functions."""
+    motor = cesaroni_m1670
+
+    assert hasattr(motor, "grain_inner_radius")
+    assert hasattr(motor, "grain_height")
+
+    # Check if the domain of grain_inner_radius function is consistent
+    times = motor.grain_inner_radius.x_array
+    values = motor.grain_inner_radius.y_array
+
+    assert times[0] == 0  # expected initial time
+    assert values[0] == motor.grain_initial_inner_radius  # expected initial inner radius
+    assert values[-1] <= motor.grain_outer_radius  # final inner radius should be less or equal than outer radius
+
+    # Evaluate without error
+    val = motor.grain_inner_radius(0.5)  # evaluate at intermediate time
+    assert isinstance(val, float)

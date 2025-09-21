@@ -216,6 +216,7 @@ class HybridMotor(Motor):
         interpolation_method="linear",
         coordinate_system_orientation="nozzle_to_combustion_chamber",
         reference_pressure=None,
+        only_radial_burn=False,
     ):
         """Initialize Motor class, process thrust curve and geometrical
         parameters and store results.
@@ -313,6 +314,11 @@ class HybridMotor(Motor):
             "nozzle_to_combustion_chamber".
         reference_pressure : int, float, optional
             Atmospheric pressure in Pa at which the thrust data was recorded.
+        only_radial_burn : boolean, optional
+            If True, inhibits the grain from burning axially, only computing
+            radial burn. If False, allows the grain to also burn
+            axially. May be useful for axially inhibited grains or hybrid motors.
+            Default is False.
 
         Returns
         -------
@@ -364,6 +370,7 @@ class HybridMotor(Motor):
             interpolation_method,
             coordinate_system_orientation,
             reference_pressure,
+            only_radial_burn,
         )
 
         self.positioned_tanks = self.liquid.positioned_tanks

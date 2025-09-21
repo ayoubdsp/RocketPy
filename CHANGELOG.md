@@ -32,6 +32,7 @@ Attention: The newest changes should be on top -->
 
 ### Added
 
+- ENH: Enable only radial burning [#815](https://github.com/RocketPy-Team/RocketPy/pull/815)
 
 ### Changed
 

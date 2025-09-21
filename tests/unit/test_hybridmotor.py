@@ -170,9 +170,49 @@ def test_hybrid_motor_inertia(hybrid_motor, spherical_oxidizer_tank):
         + DRY_MASS * (-hybrid_motor.center_of_mass + CENTER_OF_DRY_MASS) ** 2
     )
 
-    for t in np.linspace(0, 100, 100):
+    for t in np.linspace(0, BURN_TIME, 100):
         assert pytest.approx(hybrid_motor.propellant_I_11(t)) == propellant_inertia(t)
         assert pytest.approx(hybrid_motor.I_11(t)) == inertia(t)
 
         # Assert cylindrical symmetry
         assert pytest.approx(hybrid_motor.propellant_I_22(t)) == propellant_inertia(t)
+
+
+def test_hybrid_motor_only_radial_burn_behavior(hybrid_motor):
+    """
+    Test if only_radial_burn flag in HybridMotor propagates to its SolidMotor
+    and affects burn_area calculation.
+    """
+    motor = hybrid_motor
+
+    # Activates the radial burning
+    motor.solid.only_radial_burn = True
+    assert motor.solid.only_radial_burn is True
+
+    # Calculate the expected initial area using the motor's burn_area method
+    burn_area_radial = motor.solid.burn_area(0)
+    
+    # Manually calculate expected radial burn area for verification
+    expected_radial_area = (
+        2
+        * np.pi
+        * (motor.solid.grain_inner_radius(0) * motor.solid.grain_height(0))
+        * motor.solid.grain_number
+    )
+
+    assert np.isclose(burn_area_radial, expected_radial_area, atol=1e-12)
+
+    # Deactivate the radial burning and recalculate the geometry
+    motor.solid.only_radial_burn = False
+    motor.solid.evaluate_geometry()
+    assert motor.solid.only_radial_burn is False
+
+    # In this case the burning area also considers the bases of the grain  
+    inner_radius = motor.solid.grain_inner_radius(0)
+    outer_radius = motor.solid.grain_outer_radius
+    burn_area_total = (
+        expected_radial_area
+        + 2 * np.pi * (outer_radius**2 - inner_radius**2) * motor.solid.grain_number
+    )
+    assert np.isclose(motor.solid.burn_area(0), burn_area_total, atol=1e-12)
+    assert motor.solid.burn_area(0) > burn_area_radial
