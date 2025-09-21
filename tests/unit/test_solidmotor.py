@@ -290,10 +290,13 @@ def test_only_radial_burn_parameter_effect(cesaroni_m1670):
     # When only_radial_burn is active, burn_area should consider only radial area
     # Use the motor's burn_area method directly to avoid code duplication
     burn_area_radial = motor.burn_area(0)
-    
+
     # Manually calculate expected radial burn area for verification
     expected_radial_area = (
-        2 * np.pi * (motor.grain_inner_radius(0) * motor.grain_height(0)) * motor.grain_number
+        2
+        * np.pi
+        * (motor.grain_inner_radius(0) * motor.grain_height(0))
+        * motor.grain_number
     )
     assert np.isclose(burn_area_radial, expected_radial_area, atol=1e-12)
 
@@ -310,8 +313,12 @@ def test_evaluate_geometry_updates_properties(cesaroni_m1670):
     values = motor.grain_inner_radius.y_array
 
     assert times[0] == 0  # expected initial time
-    assert values[0] == motor.grain_initial_inner_radius  # expected initial inner radius
-    assert values[-1] <= motor.grain_outer_radius  # final inner radius should be less or equal than outer radius
+    assert (
+        values[0] == motor.grain_initial_inner_radius
+    )  # expected initial inner radius
+    assert (
+        values[-1] <= motor.grain_outer_radius
+    )  # final inner radius should be less or equal than outer radius
 
     # Evaluate without error
     val = motor.grain_inner_radius(0.5)  # evaluate at intermediate time

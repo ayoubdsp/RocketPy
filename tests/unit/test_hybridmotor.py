@@ -191,7 +191,7 @@ def test_hybrid_motor_only_radial_burn_behavior(hybrid_motor):
 
     # Calculate the expected initial area using the motor's burn_area method
     burn_area_radial = motor.solid.burn_area(0)
-    
+
     # Manually calculate expected radial burn area for verification
     expected_radial_area = (
         2
@@ -207,7 +207,7 @@ def test_hybrid_motor_only_radial_burn_behavior(hybrid_motor):
     motor.solid.evaluate_geometry()
     assert motor.solid.only_radial_burn is False
 
-    # In this case the burning area also considers the bases of the grain  
+    # In this case the burning area also considers the bases of the grain
     inner_radius = motor.solid.grain_inner_radius(0)
     outer_radius = motor.solid.grain_outer_radius
     burn_area_total = (

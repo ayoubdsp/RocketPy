@@ -549,7 +549,7 @@ class SolidMotor(Motor):
                 inner_radius_derivative_wrt_height = 0
                 height_derivative_wrt_inner_radius = 0
                 height_derivative_wrt_height = 0
-                # Height is constant when only radial burning is enabled, 
+                # Height is constant when only radial burning is enabled,
                 # so all derivatives with respect to height are zero
 
                 return [
