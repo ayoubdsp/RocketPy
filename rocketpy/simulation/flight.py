@@ -2164,20 +2164,57 @@ class Flight:
         # tf = 8 * nominal diameter / velocity at line stretch
 
         # Calculate added mass
-        ma = (
-            self.parachute_added_mass_coefficient
-            * rho
-            * (2 / 3)
-            * np.pi
-            * self.parachute_radius**2
-            * self.parachute_height
-        )
+        # ma = (
+        #     self.parachute_added_mass_coefficient
+        #     * rho
+        #     * (2 / 3)
+        #     * np.pi
+        #     * self.parachute_radius**2
+        #     * self.parachute_height
+        # )
 
         # Calculate freestream speed
         freestream_x = vx - wind_velocity_x
         freestream_y = vy - wind_velocity_y
         freestream_z = vz
         free_stream_speed = (freestream_x**2 + freestream_y**2 + freestream_z**2) ** 0.5
+
+        # Initialize parachute state parameters if necessary (wouldn't work for more than one parachute)
+        self.parachute_inflated_radius = getattr(
+            self, "parachute_inflated_radius", self.rocket.radius
+        )
+        self.volume = getattr(self, "volume", 0)
+
+        radius = self.parachute_radius
+        height = self.parachute_height
+        inflated_radius = self.parachute_inflated_radius
+        inflated_height = inflated_radius * height / radius
+
+        # Calculate the surface area of the parachute
+        if radius > height:
+            e = math.sqrt(1 - (inflated_height**2) / (inflated_radius**2))
+            surface_area = math.pi * inflated_radius**2 * (1 + (1 - e ^ 2) / e * math.atanh(e))
+        else:
+            e = math.sqrt(1 - (inflated_radius**2) / (inflated_height**2))
+            surface_area = (
+                math.pi * inflated_radius**2 * (1 + inflated_height / (e * inflated_radius) * math.asin(e))
+            )
+
+        volume_flow = (
+            rho
+            * freestream_z # considering parachute as vertical
+            * (
+                (math.pi * inflated_radius**2)
+                - (self.parachute_porosity * surface_area)
+            )
+        )
+        self.volume += volume_flow  # * time_step
+        self.inflated_radius = ((3 * self.volume * radius) / (4 * math.pi * height)) ** (
+            1 / 3
+        )
+
+        # Dragged air mass
+        ma = self.volume * rho
 
         # Determine drag force
         pseudo_drag = -0.5 * rho * self.parachute_cd_s * free_stream_speed
