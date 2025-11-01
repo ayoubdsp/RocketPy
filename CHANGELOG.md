@@ -32,6 +32,15 @@ Attention: The newest changes should be on top -->
 
 ### Added
 
+### Changed
+
+### Fixed
+
+
+## [v1.11.0] - 2025-11-01
+
+### Added
+
 - ENH: Tank Fluids with Variable Density from Temperature and Pressure [#852](https://github.com/RocketPy-Team/RocketPy/pull/852)
 - ENH: Controller (AirBrakes) and Sensors Encoding [#849](https://github.com/RocketPy-Team/RocketPy/pull/849)
 - EHN: Addition of ensemble variable to ECMWF dictionaries [#842](https://github.com/RocketPy-Team/RocketPy/pull/842)
@@ -44,6 +53,7 @@ Attention: The newest changes should be on top -->
 
 ### Changed
 
+- REL: bumps up rocketpy version to 1.11.0 [#868](https://github.com/RocketPy-Team/RocketPy/pull/868)
 - MNT: allow for exporting of non apogee flights. [#863](https://github.com/RocketPy-Team/RocketPy/pull/863)
 - TST: remove remaining files after test session. [#862](https://github.com/RocketPy-Team/RocketPy/pull/862)
 - MNT: bumps min python version to 3.10 [#857](https://github.com/RocketPy-Team/RocketPy/pull/857)
