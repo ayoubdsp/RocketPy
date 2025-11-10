@@ -2193,7 +2193,7 @@ class Flight:
         # Calculate the surface area of the parachute
         if radius > height:
             e = math.sqrt(1 - (inflated_height**2) / (inflated_radius**2))
-            surface_area = math.pi * inflated_radius**2 * (1 + (1 - e ^ 2) / e * math.atanh(e))
+            surface_area = math.pi * inflated_radius**2 * (1 + (1 - e**2) / e * math.atanh(e))
         else:
             e = math.sqrt(1 - (inflated_radius**2) / (inflated_height**2))
             surface_area = (
