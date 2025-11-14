@@ -1,0 +1,151 @@
+"""Unit tests for Function.from_grid() method and grid interpolation."""
+
+import numpy as np
+import pytest
+
+from rocketpy import Function
+
+
+def test_from_grid_1d():
+    """Test from_grid with 1D data (edge case)."""
+    x = np.array([0.0, 1.0, 2.0, 3.0, 4.0])
+    y_data = np.array([0.0, 1.0, 4.0, 9.0, 16.0])  # y = x^2
+    
+    func = Function.from_grid(
+        y_data, 
+        [x],
+        inputs=['x'],
+        outputs='y'
+    )
+    
+    # Test interpolation
+    assert abs(func(1.5) - 2.25) < 0.5  # Should be close to 1.5^2
+
+
+def test_from_grid_2d():
+    """Test from_grid with 2D data."""
+    x = np.array([0.0, 1.0, 2.0])
+    y = np.array([0.0, 1.0, 2.0])
+    
+    # Create grid: f(x, y) = x + 2*y
+    X, Y = np.meshgrid(x, y, indexing='ij')
+    z_data = X + 2 * Y
+    
+    func = Function.from_grid(
+        z_data,
+        [x, y],
+        inputs=['x', 'y'],
+        outputs='z'
+    )
+    
+    # Test exact points
+    assert func(0.0, 0.0) == 0.0
+    assert func(1.0, 1.0) == 3.0
+    assert func(2.0, 2.0) == 6.0
+    
+    # Test interpolation
+    result = func(1.0, 0.5)
+    expected = 1.0 + 2 * 0.5  # = 2.0
+    assert abs(result - expected) < 0.01
+
+
+def test_from_grid_3d_drag_coefficient():
+    """Test from_grid with 3D drag coefficient data (Mach, Reynolds, Alpha)."""
+    # Create sample aerodynamic data
+    mach = np.array([0.0, 0.5, 1.0, 1.5, 2.0])
+    reynolds = np.array([1e5, 5e5, 1e6])
+    alpha = np.array([0.0, 2.0, 4.0, 6.0])
+    
+    # Create a simple drag coefficient model
+    # Cd increases with Mach and alpha, slight dependency on Reynolds
+    M, Re, A = np.meshgrid(mach, reynolds, alpha, indexing='ij')
+    cd_data = 0.3 + 0.1 * M - 1e-7 * Re + 0.01 * A
+    
+    cd_func = Function.from_grid(
+        cd_data,
+        [mach, reynolds, alpha],
+        inputs=['Mach', 'Reynolds', 'Alpha'],
+        outputs='Cd'
+    )
+    
+    # Test at grid points
+    assert abs(cd_func(0.0, 1e5, 0.0) - 0.29) < 0.01  # 0.3 - 1e-7*1e5
+    assert abs(cd_func(1.0, 5e5, 0.0) - 0.35) < 0.01  # 0.3 + 0.1*1 - 1e-7*5e5
+    
+    # Test interpolation between points
+    result = cd_func(0.5, 3e5, 1.0)
+    # Expected roughly: 0.3 + 0.1*0.5 - 1e-7*3e5 + 0.01*1.0 = 0.32
+    assert 0.31 < result < 0.34
+
+
+def test_from_grid_extrapolation_constant():
+    """Test that constant extrapolation clamps to edge values."""
+    x = np.array([0.0, 1.0, 2.0])
+    y = np.array([0.0, 1.0, 4.0])  # y = x^2
+    
+    func = Function.from_grid(
+        y,
+        [x],
+        inputs=['x'],
+        outputs='y',
+        extrapolation='constant'
+    )
+    
+    # Test below lower bound - should return value at x=0
+    assert func(-1.0) == 0.0
+    
+    # Test above upper bound - should return value at x=2
+    assert func(3.0) == 4.0
+
+
+def test_from_grid_validation_errors():
+    """Test that from_grid raises appropriate errors for invalid inputs."""
+    x = np.array([0.0, 1.0, 2.0])
+    y = np.array([0.0, 1.0, 2.0])
+    
+    # Mismatched dimensions
+    X, Y = np.meshgrid(x, y, indexing='ij')
+    z_data = X + Y
+    
+    # Wrong number of axes
+    with pytest.raises(ValueError, match="Number of axes"):
+        Function.from_grid(z_data, [x], inputs=['x'], outputs='z')
+    
+    # Wrong axis length
+    with pytest.raises(ValueError, match="Axis 1 has"):
+        Function.from_grid(z_data, [x, np.array([0.0, 1.0])], inputs=['x', 'y'], outputs='z')
+    
+    # Wrong number of inputs
+    with pytest.raises(ValueError, match="Number of inputs"):
+        Function.from_grid(z_data, [x, y], inputs=['x'], outputs='z')
+
+
+def test_from_grid_default_inputs():
+    """Test that from_grid uses default input names when not provided."""
+    x = np.array([0.0, 1.0, 2.0])
+    y = np.array([0.0, 1.0, 2.0])
+    
+    X, Y = np.meshgrid(x, y, indexing='ij')
+    z_data = X + Y
+    
+    func = Function.from_grid(z_data, [x, y])
+    
+    # Should use default names
+    assert 'x0' in func.__inputs__
+    assert 'x1' in func.__inputs__
+
+
+def test_from_grid_backward_compatibility():
+    """Test that regular Function creation still works after adding from_grid."""
+    # Test 1D function from list
+    func1 = Function([[0, 0], [1, 1], [2, 4], [3, 9]])
+    assert func1(1.5) > 0  # Should interpolate
+    
+    # Test 2D function from array
+    data = np.array([[0, 0, 0], [1, 0, 1], [0, 1, 2], [1, 1, 3]])
+    func2 = Function(data)
+    assert func2(0.5, 0.5) > 0  # Should interpolate
+    
+    # Test callable function
+    func3 = Function(lambda x: x**2)
+    assert func3(2) == 4
