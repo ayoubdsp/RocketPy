@@ -4146,19 +4146,7 @@ class Function:  # pylint: disable=too-many-public-methods
         # Create a new Function instance
         func = cls.__new__(cls)
         
-        # Initialize basic attributes
-        func.source = None  # Will be set to indicate grid source
-        func.__inputs__ = inputs
-        func.__outputs__ = outputs if outputs is not None else "f"
-        func.__interpolation__ = interpolation
-        func.__extrapolation__ = extrapolation
-        func.title = kwargs.get('title', None)
-        func.__img_dim__ = 1
-        func.__cropped_domain__ = (None, None)
-        func._source_type = SourceType.ARRAY
-        func.__dom_dim__ = len(axes)
-        
-        # Store grid-specific data
+        # Store grid-specific data first
         func._grid_axes = axes
         func._grid_data = grid_data
         
@@ -4180,6 +4168,20 @@ class Function:  # pylint: disable=too-many-public-methods
         domain_points = np.column_stack([m.ravel() for m in mesh])
         func._domain = domain_points
         func._image = grid_data.ravel()
+        
+        # Set source as flattened data array (for compatibility with serialization, etc.)
+        func.source = np.column_stack([domain_points, func._image])
+        
+        # Initialize basic attributes
+        func.__inputs__ = inputs
+        func.__outputs__ = outputs if outputs is not None else "f"
+        func.__interpolation__ = interpolation
+        func.__extrapolation__ = extrapolation
+        func.title = kwargs.get('title', None)
+        func.__img_dim__ = 1
+        func.__cropped_domain__ = (None, None)
+        func._source_type = SourceType.ARRAY
+        func.__dom_dim__ = len(axes)
         
         # Set basic array attributes for compatibility
         func.x_array = axes[0]
