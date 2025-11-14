@@ -455,15 +455,18 @@ class Function:  # pylint: disable=too-many-public-methods
             # For grid interpolation, the actual interpolator is stored separately
             # This function is a placeholder that should not be called directly
             # since __get_value_opt_grid is used instead
-            if hasattr(self, '_grid_interpolator'):
+            if hasattr(self, "_grid_interpolator"):
+
                 def grid_interpolation(x, x_min, x_max, x_data, y_data, coeffs):  # pylint: disable=unused-argument
                     return self._grid_interpolator(x)
+
                 self._interpolation_func = grid_interpolation
             else:
                 # Fallback to shepard if grid interpolator not available
                 warnings.warn(
                     "Grid interpolator not found, falling back to shepard interpolation"
                 )
+
                 def shepard_fallback(x, x_min, x_max, x_data, y_data, _):
                     # pylint: disable=unused-argument
                     arg_qty, arg_dim = x.shape
@@ -480,6 +483,7 @@ class Function:  # pylint: disable=too-many-public-methods
                     result[valid_indexes] = numerator_sum / denominator_sum
                     result[~valid_indexes] = y_data[zero_distances[1]]
                     return result
+
                 self._interpolation_func = shepard_fallback
 
         else:
@@ -683,22 +687,22 @@ class Function:  # pylint: disable=too-many-public-methods
             Value of the Function at the specified points.
         """
         # Check if we have the grid interpolator
-        if not hasattr(self, '_grid_interpolator'):
+        if not hasattr(self, "_grid_interpolator"):
             raise RuntimeError(
                 "Grid interpolator not initialized. Use from_grid() to create "
                 "a Function with grid interpolation."
             )
-        
+
         # Convert args to appropriate format for RegularGridInterpolator
         # RegularGridInterpolator expects points as (N, ndim) array
         if len(args) != self.__dom_dim__:
             raise ValueError(
                 f"Expected {self.__dom_dim__} arguments but got {len(args)}"
             )
-        
+
         # Handle single point evaluation
         point = np.array(args).reshape(1, -1)
-        
+
         # Handle extrapolation based on the extrapolation setting
         if self.__extrapolation__ == "constant":
             # Clamp point to grid boundaries for constant extrapolation
@@ -719,11 +723,11 @@ class Function:  # pylint: disable=too-many-public-methods
         else:
             # Natural or other extrapolation - use interpolator directly
             result = self._grid_interpolator(point)
-        
+
         # Return scalar for single evaluation
         if result.size == 1:
             return float(result[0])
-        
+
         return result
 
     def __determine_1d_domain_bounds(self, lower, upper):
@@ -4042,10 +4046,18 @@ class Function:  # pylint: disable=too-many-public-methods
         }
 
     @classmethod
-    def from_grid(cls, grid_data, axes, inputs=None, outputs=None, 
-                  interpolation="linear_grid", extrapolation="constant", **kwargs):
+    def from_grid(
+        cls,
+        grid_data,
+        axes,
+        inputs=None,
+        outputs=None,
+        interpolation="linear_grid",
+        extrapolation="constant",
+        **kwargs,
+    ):
         """Creates a Function from N-dimensional grid data.
-        
+
         This method is designed for structured grid data, such as CFD simulation
         results where values are computed on a regular grid. It uses
         scipy.interpolate.RegularGridInterpolator for efficient interpolation.
@@ -4092,14 +4104,14 @@ class Function:  # pylint: disable=too-many-public-methods
         >>> cd_data = 0.3 + 0.1 * M + 1e-7 * Re + 0.01 * A
         >>> # Create Function object
         >>> cd_func = Function.from_grid(
-        ...     cd_data, 
+        ...     cd_data,
         ...     [mach, reynolds, alpha],
         ...     inputs=['Mach', 'Reynolds', 'Alpha'],
         ...     outputs='Cd'
         ... )
         >>> # Evaluate at a point
         >>> cd_func(1.2, 3e5, 3.0)
-        
+
         Notes
         -----
         - Grid data must be on a regular (structured) grid.
@@ -4112,21 +4124,23 @@ class Function:  # pylint: disable=too-many-public-methods
         # Validate inputs
         if not isinstance(grid_data, np.ndarray):
             grid_data = np.array(grid_data)
-        
+
         if not isinstance(axes, (list, tuple)):
             raise ValueError("axes must be a list or tuple of 1D arrays")
-        
+
         # Ensure all axes are numpy arrays
-        axes = [np.array(axis) if not isinstance(axis, np.ndarray) else axis 
-                for axis in axes]
-        
+        axes = [
+            np.array(axis) if not isinstance(axis, np.ndarray) else axis
+            for axis in axes
+        ]
+
         # Check dimensions match
         if len(axes) != grid_data.ndim:
             raise ValueError(
                 f"Number of axes ({len(axes)}) must match grid_data dimensions "
                 f"({grid_data.ndim})"
             )
-        
+
         # Check each axis matches corresponding grid dimension
         for i, axis in enumerate(axes):
             if len(axis) != grid_data.shape[i]:
@@ -4134,7 +4148,7 @@ class Function:  # pylint: disable=too-many-public-methods
                     f"Axis {i} has {len(axis)} points but grid dimension {i} "
                     f"has {grid_data.shape[i]} points"
                 )
-        
+
         # Set default inputs if not provided
         if inputs is None:
             inputs = [f"x{i}" for i in range(len(axes))]
@@ -4142,68 +4156,68 @@ class Function:  # pylint: disable=too-many-public-methods
             raise ValueError(
                 f"Number of inputs ({len(inputs)}) must match number of axes ({len(axes)})"
             )
-        
+
         # Create a new Function instance
         func = cls.__new__(cls)
-        
+
         # Store grid-specific data first
         func._grid_axes = axes
         func._grid_data = grid_data
-        
+
         # Create RegularGridInterpolator
         # We handle extrapolation manually in __get_value_opt_grid,
         # so we set bounds_error=False and let it extrapolate linearly
         # (which we'll override when needed)
         func._grid_interpolator = RegularGridInterpolator(
-            axes, 
-            grid_data, 
-            method='linear',
+            axes,
+            grid_data,
+            method="linear",
             bounds_error=False,
-            fill_value=None  # Linear extrapolation (will be overridden by manual handling)
+            fill_value=None,  # Linear extrapolation (will be overridden by manual handling)
         )
-        
+
         # Create placeholder domain and image for compatibility
         # This flattens the grid for any code expecting these attributes
-        mesh = np.meshgrid(*axes, indexing='ij')
+        mesh = np.meshgrid(*axes, indexing="ij")
         domain_points = np.column_stack([m.ravel() for m in mesh])
         func._domain = domain_points
         func._image = grid_data.ravel()
-        
+
         # Set source as flattened data array (for compatibility with serialization, etc.)
         func.source = np.column_stack([domain_points, func._image])
-        
+
         # Initialize basic attributes
         func.__inputs__ = inputs
         func.__outputs__ = outputs if outputs is not None else "f"
         func.__interpolation__ = interpolation
         func.__extrapolation__ = extrapolation
-        func.title = kwargs.get('title', None)
+        func.title = kwargs.get("title", None)
         func.__img_dim__ = 1
         func.__cropped_domain__ = (None, None)
         func._source_type = SourceType.ARRAY
         func.__dom_dim__ = len(axes)
-        
+
         # Set basic array attributes for compatibility
         func.x_array = axes[0]
         func.x_initial, func.x_final = axes[0][0], axes[0][-1]
-        func.y_array = func._image[:len(axes[0])]  # Placeholder
+        func.y_array = func._image[: len(axes[0])]  # Placeholder
         func.y_initial, func.y_final = func._image[0], func._image[-1]
         if len(axes) > 2:
-            func.z_array = axes[2] 
+            func.z_array = axes[2]
             func.z_initial, func.z_final = axes[2][0], axes[2][-1]
-        
+
         # Set get_value_opt to use grid interpolation
         func.get_value_opt = func.__get_value_opt_grid
-        
+
         # Set interpolation and extrapolation functions
         func.__set_interpolation_func()
         func.__set_extrapolation_func()
-        
+
         # Set inputs and outputs properly
         func.set_inputs(inputs)
         func.set_outputs(outputs)
         func.set_title(func.title)
-        
+
         return func
 
     @classmethod

@@ -352,7 +352,7 @@ class Rocket:
                 "linear",
                 "constant",
             )
-        
+
         if isinstance(power_on_drag, Function):
             self.power_on_drag = power_on_drag
         else:
