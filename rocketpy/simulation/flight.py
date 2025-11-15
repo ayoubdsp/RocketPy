@@ -1349,7 +1349,7 @@ class Flight:
         return -wind_u * np.cos(heading_rad) + wind_v * np.sin(heading_rad)
 
     def __get_drag_coefficient(
-        self, drag_function, mach, z, velocity_body, freestream_velocity_body
+        self, drag_function, mach, z, freestream_velocity_body
     ):
         """Calculate drag coefficient, handling both 1D and multi-dimensional functions.
 
