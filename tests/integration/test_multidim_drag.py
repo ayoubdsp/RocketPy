@@ -1,14 +1,12 @@
 """Integration tests for multi-dimensional drag coefficient support."""
 
 import numpy as np
-import pytest
 
-from rocketpy import Function
+from rocketpy import Environment, Flight, Function, Rocket, SolidMotor
 
 
 def test_flight_with_1d_drag(example_plain_env, calisto):
     """Test that flights with 1D drag curves still work (backward compatibility)."""
-    from rocketpy import Flight
 
     flight = Flight(
         rocket=calisto,
@@ -26,8 +24,6 @@ def test_flight_with_1d_drag(example_plain_env, calisto):
 
 def test_flight_with_3d_drag_basic():
     """Test that a simple 3D drag function works."""
-    from rocketpy import Environment, Flight, Rocket, SolidMotor
-
     # Create environment
     env = Environment(gravity=9.81)
     env.set_atmospheric_model(type="standard_atmosphere")

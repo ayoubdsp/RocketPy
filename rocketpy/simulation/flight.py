@@ -1379,9 +1379,7 @@ class Flight:
 
         return -wind_u * np.cos(heading_rad) + wind_v * np.sin(heading_rad)
 
-    def __get_drag_coefficient(
-        self, drag_function, mach, z, freestream_velocity_body
-    ):
+    def __get_drag_coefficient(self, drag_function, mach, z, freestream_velocity_body):
         """Calculate drag coefficient, handling both 1D and multi-dimensional functions.
 
         Parameters
@@ -1392,8 +1390,6 @@ class Flight:
             Mach number
         z : float
             Altitude in meters
-        velocity_body : Vector or array-like
-            Rocket velocity in body frame [vx_b, vy_b, vz_b]
         freestream_velocity_body : Vector or array-like
             Freestream velocity in body frame [stream_vx_b, stream_vy_b, stream_vz_b]
 
@@ -1517,7 +1513,6 @@ class Flight:
             self.rocket.power_on_drag,
             free_stream_mach,
             z,
-            [vx_b, vy_b, vz_b],
             [stream_vx_b, stream_vy_b, stream_vz_b],
         )
 
@@ -1712,7 +1707,6 @@ class Flight:
                 self.rocket.power_on_drag,
                 free_stream_mach,
                 z,
-                [vx_b, vy_b, vz_b],
                 [stream_vx_b, stream_vy_b, stream_vz_b],
             )
         else:
@@ -1720,7 +1714,6 @@ class Flight:
                 self.rocket.power_off_drag,
                 free_stream_mach,
                 z,
-                [vx_b, vy_b, vz_b],
                 [stream_vx_b, stream_vy_b, stream_vz_b],
             )
         rho = self.env.density.get_value_opt(z)
@@ -2125,7 +2118,6 @@ class Flight:
                 self.rocket.power_on_drag,
                 free_stream_mach,
                 z,
-                velocity_in_body_frame,
                 freestream_velocity_body,
             )
         else:
@@ -2134,7 +2126,6 @@ class Flight:
                 self.rocket.power_off_drag,
                 free_stream_mach,
                 z,
-                velocity_in_body_frame,
                 freestream_velocity_body,
             )
         R3 += -0.5 * rho * (free_stream_speed**2) * self.rocket.area * drag_coeff

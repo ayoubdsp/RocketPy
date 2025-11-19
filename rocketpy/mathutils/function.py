@@ -674,6 +674,8 @@ class Function:  # pylint: disable=too-many-public-methods
 
     def __get_value_opt_grid(self, *args):
         """Evaluate the Function using RegularGridInterpolator for structured grids.
+        
+        This method is dynamically assigned in from_grid() class method.
 
         Parameters
         ----------
