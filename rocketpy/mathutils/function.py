@@ -4093,7 +4093,16 @@ class Function:  # pylint: disable=too-many-public-methods
         -------
         Function
             A Function object using RegularGridInterpolator for evaluation.
-
+        
+        Notes
+        -----
+        - Grid data must be on a regular (structured) grid.
+        - For unstructured data, use the regular Function constructor with
+          scattered points.
+        - Extrapolation with 'constant' mode uses the nearest edge values,
+          which is appropriate for aerodynamic coefficients where extrapolation
+          beyond the data range should be avoided.
+        
         Examples
         --------
         >>> import numpy as np
@@ -4113,15 +4122,8 @@ class Function:  # pylint: disable=too-many-public-methods
         ... )
         >>> # Evaluate at a point
         >>> cd_func(1.2, 3e5, 3.0)
+        0.48000000000000004
 
-        Notes
-        -----
-        - Grid data must be on a regular (structured) grid.
-        - For unstructured data, use the regular Function constructor with
-          scattered points.
-        - Extrapolation with 'constant' mode uses the nearest edge values,
-          which is appropriate for aerodynamic coefficients where extrapolation
-          beyond the data range should be avoided.
         """
         # Validate inputs
         if not isinstance(grid_data, np.ndarray):
