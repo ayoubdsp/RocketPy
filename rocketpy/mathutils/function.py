@@ -674,7 +674,7 @@ class Function:  # pylint: disable=too-many-public-methods
 
     def __get_value_opt_grid(self, *args):
         """Evaluate the Function using RegularGridInterpolator for structured grids.
-        
+
         This method is dynamically assigned in from_grid() class method.
 
         Parameters
@@ -4093,7 +4093,7 @@ class Function:  # pylint: disable=too-many-public-methods
         -------
         Function
             A Function object using RegularGridInterpolator for evaluation.
-        
+
         Notes
         -----
         - Grid data must be on a regular (structured) grid.
@@ -4102,7 +4102,7 @@ class Function:  # pylint: disable=too-many-public-methods
         - Extrapolation with 'constant' mode uses the nearest edge values,
           which is appropriate for aerodynamic coefficients where extrapolation
           beyond the data range should be avoided.
-        
+
         Examples
         --------
         >>> import numpy as np
