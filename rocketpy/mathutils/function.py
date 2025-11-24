@@ -672,7 +672,7 @@ class Function:  # pylint: disable=too-many-public-methods
 
         return result
 
-    def __get_value_opt_grid(self, *args):
+    def __get_value_opt_grid(self, *args): # pylint: disable=unused-private-member
         """Evaluate the Function using RegularGridInterpolator for structured grids.
 
         This method is dynamically assigned in from_grid() class method.
@@ -4057,7 +4057,7 @@ class Function:  # pylint: disable=too-many-public-methods
         interpolation="linear_grid",
         extrapolation="constant",
         **kwargs,
-    ):
+    ): # pylint: disable=too-many-statements #TODO: Refactor this method into smaller methods
         """Creates a Function from N-dimensional grid data.
 
         This method is designed for structured grid data, such as CFD simulation
