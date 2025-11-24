@@ -1498,10 +1498,6 @@ class Flight:
         a32 = 2 * (e2 * e3 + e0 * e1)
         a33 = 1 - 2 * (e1**2 + e2**2)
 
-        vx_b = a11 * vx + a21 * vy + a31 * vz
-        vy_b = a12 * vx + a22 * vy + a32 * vz
-        vz_b = a13 * vx + a23 * vy + a33 * vz
-
         # Freestream velocity in body frame
         wind_vx = self.env.wind_velocity_x.get_value_opt(z)
         wind_vy = self.env.wind_velocity_y.get_value_opt(z)
