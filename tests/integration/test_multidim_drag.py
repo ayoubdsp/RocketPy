@@ -104,7 +104,7 @@ def test_3d_drag_with_varying_alpha():
     reynolds = np.array([1e5, 1e6])
     alpha = np.array([0.0, 5.0, 10.0, 15.0])
 
-    M, Re, A = np.meshgrid(mach, reynolds, alpha, indexing="ij")
+    M, _, A = np.meshgrid(mach, reynolds, alpha, indexing="ij")
     # Strong alpha dependency: Cd increases significantly with alpha
     cd_data = 0.3 + 0.05 * M + 0.03 * A
     cd_data = np.clip(cd_data, 0.2, 2.0)
