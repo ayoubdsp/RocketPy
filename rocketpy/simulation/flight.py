@@ -578,7 +578,7 @@ class Flight:
             documentation [1]_.
         weathercock_coeff : float, optional
             Coefficient that controls the rate at which the rocket's body axis
-            aligns with the relative wind direction in 3-DOF simulations.
+            aligns with the relative wind direction in 3-DOF simulations, in rad/s.
             A higher value means faster alignment (quasi-static weathercocking).
             This parameter is only used when simulation_mode is '3 DOF'.
             Default is 1.0, which provides moderate alignment. Set to 0 to
@@ -1802,7 +1802,7 @@ class Flight:
     def u_dot_generalized_3dof(self, t, u, post_processing=False):
         """Calculates derivative of u state vector with respect to time when the
         rocket is flying in 3 DOF motion in space and significant mass variation
-        effects exist.Includes a weathercocking model that evolves the body axis
+        effects exist. Includes a weathercocking model that evolves the body axis
         direction toward the relative wind direction.
 
         Parameters
@@ -1942,7 +1942,7 @@ class Flight:
                 sin_angle = min(1.0, max(-1.0, sin_angle))
 
                 # Angular velocity magnitude proportional to misalignment angle
-                # Using sin(angle) as approximation for small angles: sin(theta) ≈ theta
+                # Angular velocity magnitude proportional to sin(angle)
                 omega_mag = self.weathercock_coeff * sin_angle
 
                 # Angular velocity in inertial frame
