@@ -252,7 +252,7 @@ def test_weathercock_aligned_no_evolution(example_plain_env, point_mass_rocket):
         simulation_mode="3 DOF",
         weathercock_coeff=1.0,
     )
-    # Body pointing in -x direction (into the wind for vx=50)
+    # Body pointing in +x direction (into the wind for vx=50)
     # Quaternion for 90 degree rotation about y-axis uses half-angle:
     # e0=cos(90°/2)=cos(45°), e2=sin(90°/2)=sin(45°)
     sqrt2_2 = np.sqrt(2) / 2
@@ -263,4 +263,4 @@ def test_weathercock_aligned_no_evolution(example_plain_env, point_mass_rocket):
     # With alignment, quaternion derivatives should be very small
     e_dot = result[6:10]
     e_dot_magnitude = sum(ed**2 for ed in e_dot) ** 0.5
-    assert e_dot_magnitude < 0.1, "Quaternion derivatives should be small when aligned"
+    assert e_dot_magnitude < 1e-8, "Quaternion derivatives should be very small when aligned"
