@@ -1810,7 +1810,7 @@ class Flight:
         t : float
             Time in seconds.
         u : list
-            State vector: [x, y, z, vx, vy, vz, q0, q1, q2, q3, omega1, omega2, omega3].
+            State vector: [x, y, z, vx, vy, vz, e0, e1, e2, e3, omega1, omega2, omega3].
         post_processing : bool, optional
             If True, adds flight data to self variables like self.angle_of_attack.
 
@@ -1940,7 +1940,6 @@ class Flight:
                 sin_angle = min(1.0, max(-1.0, sin_angle))
 
                 # Angular velocity magnitude proportional to misalignment angle
-                # Angular velocity magnitude proportional to sin(angle)
                 omega_mag = self.weathercock_coeff * sin_angle
 
                 # Angular velocity in inertial frame
@@ -1976,7 +1975,7 @@ class Flight:
                         # If parallel, use y axis
                         y_axis = Vector([0.0, 1.0, 0.0])
                         perp_axis = body_z_inertial ^ y_axis
-                    rotation_axis = perp_axis.normalized()
+                    rotation_axis = perp_axis.unit_vector
                     # 180 degree rotation: sin(angle) = 1
                     omega_mag = self.weathercock_coeff * 1.0
                     omega_inertial = rotation_axis * omega_mag

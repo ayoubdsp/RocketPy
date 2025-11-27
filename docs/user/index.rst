@@ -7,7 +7,7 @@ RocketPy's User Guide
 
    Installation and Requirements <installation.rst>
    First Simulation <first_simulation.rst>
-   3-DOF Simulations <three_dof_simulation.rst>
+   3 DOF Simulations and comparison <three_dof_simulation.rst>
 
 .. toctree::
    :maxdepth: 1
@@ -28,7 +28,7 @@ RocketPy's User Guide
    Air Brakes Example <airbrakes.rst>
    ../notebooks/sensors.ipynb
    ../matlab/matlab.rst
-   3 DOF Simulations and comparison<three_dof_simulation.rst>
+
 .. toctree::
    :maxdepth: 2
    :caption: Monte Carlo Simulations
