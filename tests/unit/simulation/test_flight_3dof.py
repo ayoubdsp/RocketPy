@@ -137,3 +137,130 @@ def test_invalid_simulation_mode(example_plain_env, calisto):
             rail_length=1,
             simulation_mode="2 DOF",
         )
+
+
+def test_weathercock_coeff_stored(example_plain_env, point_mass_rocket):
+    """Tests that the weathercock_coeff parameter is correctly stored.
+    Parameters
+    ----------
+    example_plain_env : rocketpy.Environment
+        A basic environment fixture for flight simulation.
+    point_mass_rocket : rocketpy.PointMassRocket
+        A point mass rocket fixture for 3-DOF simulation.
+    """
+    flight = Flight(
+        rocket=point_mass_rocket,
+        environment=example_plain_env,
+        rail_length=1,
+        simulation_mode="3 DOF",
+        weathercock_coeff=2.5,
+    )
+    assert flight.weathercock_coeff == 2.5
+
+
+def test_weathercock_coeff_default(example_plain_env, point_mass_rocket):
+    """Tests that the default weathercock_coeff is 1.0.
+    Parameters
+    ----------
+    example_plain_env : rocketpy.Environment
+        A basic environment fixture for flight simulation.
+    point_mass_rocket : rocketpy.PointMassRocket
+        A point mass rocket fixture for 3-DOF simulation.
+    """
+    flight = Flight(
+        rocket=point_mass_rocket,
+        environment=example_plain_env,
+        rail_length=1,
+        simulation_mode="3 DOF",
+    )
+    assert flight.weathercock_coeff == 1.0
+
+
+def test_weathercock_zero_gives_fixed_attitude(example_plain_env, point_mass_rocket):
+    """Tests that weathercock_coeff=0 results in fixed attitude (no quaternion change).
+    When weathercock_coeff is 0, the quaternion derivatives should be zero,
+    meaning the attitude does not evolve.
+    Parameters
+    ----------
+    example_plain_env : rocketpy.Environment
+        A basic environment fixture for flight simulation.
+    point_mass_rocket : rocketpy.PointMassRocket
+        A point mass rocket fixture for 3-DOF simulation.
+    """
+    flight = Flight(
+        rocket=point_mass_rocket,
+        environment=example_plain_env,
+        rail_length=1,
+        simulation_mode="3 DOF",
+        weathercock_coeff=0.0,
+    )
+    # Create a state vector with non-zero velocity (to have freestream)
+    # [x, y, z, vx, vy, vz, e0, e1, e2, e3, w1, w2, w3]
+    u = [0, 0, 100, 10, 5, 50, 1, 0, 0, 0, 0, 0, 0]
+    result = flight.u_dot_generalized_3dof(0, u)
+
+    # Quaternion derivatives (indices 6-9) should be zero
+    e_dot = result[6:10]
+    assert all(abs(ed) < 1e-10 for ed in e_dot), "Quaternion derivatives should be zero"
+
+
+def test_weathercock_nonzero_evolves_attitude(example_plain_env, point_mass_rocket):
+    """Tests that non-zero weathercock_coeff causes attitude evolution.
+    When the body axis is misaligned with the relative wind and weathercock_coeff
+    is positive, the quaternion derivatives should be non-zero.
+    Parameters
+    ----------
+    example_plain_env : rocketpy.Environment
+        A basic environment fixture for flight simulation.
+    point_mass_rocket : rocketpy.PointMassRocket
+        A point mass rocket fixture for 3-DOF simulation.
+    """
+    flight = Flight(
+        rocket=point_mass_rocket,
+        environment=example_plain_env,
+        rail_length=1,
+        simulation_mode="3 DOF",
+        weathercock_coeff=1.0,
+    )
+    # Create a state with misaligned body axis
+    # Body pointing straight up (e0=1, e1=e2=e3=0) but velocity is horizontal
+    # [x, y, z, vx, vy, vz, e0, e1, e2, e3, w1, w2, w3]
+    u = [0, 0, 100, 50, 0, 0, 1, 0, 0, 0, 0, 0, 0]
+    result = flight.u_dot_generalized_3dof(0, u)
+
+    # With misalignment, quaternion derivatives should be non-zero
+    e_dot = result[6:10]
+    e_dot_magnitude = sum(ed**2 for ed in e_dot) ** 0.5
+    assert e_dot_magnitude > 1e-6, "Quaternion derivatives should be non-zero"
+
+
+def test_weathercock_aligned_no_evolution(example_plain_env, point_mass_rocket):
+    """Tests that when body axis is aligned with relative wind, no rotation occurs.
+    When the rocket's body z-axis is already aligned with the negative of the
+    freestream velocity, the quaternion derivatives should be approximately zero.
+    Parameters
+    ----------
+    example_plain_env : rocketpy.Environment
+        A basic environment fixture for flight simulation.
+    point_mass_rocket : rocketpy.PointMassRocket
+        A point mass rocket fixture for 3-DOF simulation.
+    """
+    flight = Flight(
+        rocket=point_mass_rocket,
+        environment=example_plain_env,
+        rail_length=1,
+        simulation_mode="3 DOF",
+        weathercock_coeff=1.0,
+    )
+    # Body pointing in -x direction (into the wind for vx=50)
+    # Quaternion for 90 degree rotation about y-axis uses half-angle:
+    # e0=cos(90°/2)=cos(45°), e2=sin(90°/2)=sin(45°)
+    sqrt2_2 = np.sqrt(2) / 2
+    # [x, y, z, vx, vy, vz, e0, e1, e2, e3, w1, w2, w3]
+    u = [0, 0, 100, 50, 0, 0, sqrt2_2, 0, sqrt2_2, 0, 0, 0, 0]
+    result = flight.u_dot_generalized_3dof(0, u)
+
+    # With alignment, quaternion derivatives should be very small
+    e_dot = result[6:10]
+    e_dot_magnitude = sum(ed**2 for ed in e_dot) ** 0.5
+    assert e_dot_magnitude < 0.1, "Quaternion derivatives should be small when aligned"

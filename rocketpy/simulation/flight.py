@@ -615,7 +615,7 @@ class Flight:
         self.simulation_mode = simulation_mode
         self.ode_solver = ode_solver
         self.weathercock_coeff = weathercock_coeff
-        
+
         # Controller initialization
         self.__init_controllers()
 
@@ -1971,7 +1971,7 @@ class Flight:
             # No weathercocking or negligible freestream speed
             e_dot = [0, 0, 0, 0]
             w_dot = [0, 0, 0]
-            
+
         u_dot = [*r_dot, *v_dot, *e_dot, *w_dot]
 
         if post_processing:
