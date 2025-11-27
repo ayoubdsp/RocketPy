@@ -1905,8 +1905,6 @@ class Flight:
 
         # Dynamics
         v_dot = K @ (total_force / total_mass)
-        e_dot = [0, 0, 0, 0]  # Euler derivatives unused in 3DOF
-        w_dot = [0, 0, 0]  # No angular dynamics in 3DOF
         r_dot = [vx, vy, vz]
         # Weathercocking: evolve body axis direction toward relative wind
         # The body z-axis (attitude vector) should align with -freestream_velocity
@@ -1964,9 +1962,40 @@ class Flight:
                 e_dot = [e0_dot, e1_dot, e2_dot, e3_dot]
                 w_dot = [0, 0, 0]  # No angular acceleration in 3DOF model
             else:
-                # Already aligned or anti-aligned
-                e_dot = [0, 0, 0, 0]
-                w_dot = [0, 0, 0]
+                # Check if aligned or anti-aligned using dot product
+                dot = body_z_inertial @ desired_direction  # Vector dot product
+                if dot > 0.999:  # Aligned
+                    e_dot = [0, 0, 0, 0]
+                    w_dot = [0, 0, 0]
+                elif dot < -0.999:  # Anti-aligned
+                    # Choose an arbitrary perpendicular axis
+                    # Try [1,0,0] unless body_z_inertial is parallel to it
+                    x_axis = Vector([1.0, 0.0, 0.0])
+                    perp_axis = body_z_inertial ^ x_axis
+                    if abs(perp_axis) < 1e-6:
+                        # If parallel, use y axis
+                        y_axis = Vector([0.0, 1.0, 0.0])
+                        perp_axis = body_z_inertial ^ y_axis
+                    rotation_axis = perp_axis.normalized()
+                    # 180 degree rotation: sin(angle) = 1
+                    omega_mag = self.weathercock_coeff * 1.0
+                    omega_inertial = rotation_axis * omega_mag
+                    omega_body = Kt @ omega_inertial
+                    omega1_wc, omega2_wc, omega3_wc = (
+                        omega_body.x,
+                        omega_body.y,
+                        omega_body.z,
+                    )
+                    e0_dot = 0.5 * (-omega1_wc * e1 - omega2_wc * e2 - omega3_wc * e3)
+                    e1_dot = 0.5 * (omega1_wc * e0 + omega3_wc * e2 - omega2_wc * e3)
+                    e2_dot = 0.5 * (omega2_wc * e0 - omega3_wc * e1 + omega1_wc * e3)
+                    e3_dot = 0.5 * (omega3_wc * e0 + omega2_wc * e1 - omega1_wc * e2)
+                    e_dot = [e0_dot, e1_dot, e2_dot, e3_dot]
+                    w_dot = [0, 0, 0]
+                else:
+                    # Vectors are nearly aligned, treat as aligned
+                    e_dot = [0, 0, 0, 0]
+                    w_dot = [0, 0, 0]
         else:
             # No weathercocking or negligible freestream speed
             e_dot = [0, 0, 0, 0]

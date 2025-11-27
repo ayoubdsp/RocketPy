@@ -263,4 +263,6 @@ def test_weathercock_aligned_no_evolution(example_plain_env, point_mass_rocket):
     # With alignment, quaternion derivatives should be very small
     e_dot = result[6:10]
     e_dot_magnitude = sum(ed**2 for ed in e_dot) ** 0.5
-    assert e_dot_magnitude < 1e-8, "Quaternion derivatives should be very small when aligned"
+    assert e_dot_magnitude < 1e-8, (
+        "Quaternion derivatives should be very small when aligned"
+    )
