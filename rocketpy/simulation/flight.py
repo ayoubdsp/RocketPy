@@ -492,7 +492,7 @@ class Flight:
         equations_of_motion="standard",
         ode_solver="LSODA",
         simulation_mode="6 DOF",
-        weathercock_coeff=1.0,
+        weathercock_coeff=None,
     ):
         """Run a trajectory simulation.
 
