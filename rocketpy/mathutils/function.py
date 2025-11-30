@@ -4095,9 +4095,21 @@ class Function:  # pylint: disable=too-many-public-methods
             Interpolation method. Default is 'linear_grid'.
             Currently only 'linear_grid' is supported for grid data.
         extrapolation : str, optional
-            Extrapolation behavior. Default is 'constant', which clamps to edge values.
-            'constant': Use nearest edge value for out-of-bounds points.
-            'zero': Return zero for out-of-bounds points.
+            Extrapolation behavior. Default is ``'constant'`` which clamps to
+            edge values. Supported options are::
+
+                'constant'
+                    Use nearest edge value for out-of-bounds points (clamp).
+                'zero'
+                    Return zero for out-of-bounds points.
+                'natural'
+                    Use the interpolator's natural behavior: when the
+                    underlying ``RegularGridInterpolator`` is created with
+                    ``fill_value=None`` and ``method='linear'``, this results
+                    in linear extrapolation based on the edge gradients.
+
+            If an unsupported extrapolation value is supplied a ``ValueError``
+            is raised.
         **kwargs : dict, optional
             Additional arguments passed to the Function constructor.
 
@@ -4175,6 +4187,14 @@ class Function:  # pylint: disable=too-many-public-methods
 
         # Create a new Function instance
         func = cls.__new__(cls)
+
+        # Validate extrapolation option for grid-based interpolation
+        allowed_extrap = ("constant", "zero", "natural")
+        if extrapolation not in allowed_extrap:
+            raise ValueError(
+                "Unsupported extrapolation for grid interpolation. "
+                f"Supported values: {allowed_extrap}"
+            )
 
         # Store grid-specific data first
         func._grid_axes = axes
