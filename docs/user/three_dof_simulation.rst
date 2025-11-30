@@ -356,6 +356,27 @@ restoring moments from fins and other stabilizing surfaces. The 3-DOF
 weathercocking model provides a simplified representation of this behavior
 without requiring full 6-DOF rotational dynamics.
 
+The weathercocking coefficient (``weathercock_coeff``, often abbreviated
+``wc``) represents the rate at which the rocket's body axis aligns with
+the relative wind. This simplified model does not consider aerodynamic
+surfaces (for example, fins) or compute aerodynamic torques. In a
+full 6-DOF model, weathercocking depends on quantities such as the
+static margin and the normal-force coefficient, which produce restoring
+moments that turn the rocket into the wind. A 3-DOF point-mass
+simulation cannot compute those moments, so the model enforces
+alignment of the body axis toward the freestream with a proportional
+law.
+
+Treat ``weathercock_coeff`` as a tuning parameter that approximates the
+combined effect of static stability and restoring moments. It has no
+direct physical units; designers typically select values by trial and
+error and validate them later against full 6-DOF simulations.
+
+Sources:
+
+- `Weathercocking (NASA Bottle Rocket tutorial) <https://www.grc.nasa.gov/www/k-12/VirtualAero/BottleRocket/airplane/rktcock.html>`_
+- `Rocket weather-cocking (NASA beginners guide) <https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/rocket-weather-cocking/#new-flight-path>`_
+ 
 The ``weathercock_coeff`` Parameter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -371,7 +392,7 @@ in the :class:`rocketpy.Flight` class:
         longitude=-106.974998,
         elevation=1400
     )
-    env.set_atmospheric_model(type="StandardAtmosphere")
+    env.set_atmospheric_model(type="standard_atmosphere")
 
     motor = PointMassMotor(
         thrust_source=1500,
@@ -460,7 +481,7 @@ accuracy.
         longitude=9.003336,
         elevation=407,
     )
-    env.set_atmospheric_model(type="StandardAtmosphere")
+    env.set_atmospheric_model(type="standard_atmosphere")
     env.max_expected_height = 2000
 
     # Full 6-DOF Motor
