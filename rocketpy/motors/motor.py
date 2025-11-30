@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 from abc import ABC, abstractmethod
 from functools import cached_property
 from os import path, remove
+from pathlib import Path
 
 import numpy as np
 import requests
@@ -15,8 +16,11 @@ from ..plots.motor_plots import _MotorPlots
 from ..prints.motor_prints import _MotorPrints
 from ..tools import parallel_axis_theorem_from_com, tuple_handler
 
-
 # pylint: disable=too-many-public-methods
+# ThrustCurve API cache
+CACHE_DIR = Path.home() / ".rocketpy_cache"
+
+
 class Motor(ABC):
     """Abstract class to specify characteristics and useful operations for
     motors. Cannot be instantiated.
@@ -1918,7 +1922,7 @@ class GenericMotor(Motor):
         )
 
     @staticmethod
-    def _call_thrustcurve_api(name: str):
+    def _call_thrustcurve_api(name: str, no_cache: bool = False):  # pylint: disable=too-many-statements
         """
         Download a .eng file from the ThrustCurve API
         based on the given motor name.
@@ -1929,6 +1933,8 @@ class GenericMotor(Motor):
             The motor name according to the API (e.g., "Cesaroni_M1670" or "M1670").
             Both manufacturer-prefixed and shorthand names are commonly used; if multiple
             motors match the search, the first result is used.
+        no_cache : bool, optional
+            If True, forces a new API fetch even if the motor is cached.
 
         Returns
         -------
@@ -1941,9 +1947,31 @@ class GenericMotor(Motor):
             If no motor is found or if the downloaded .eng data is missing.
         requests.exceptions.RequestException
             If a network or HTTP error occurs during the API call.
-        """
-        base_url = "https://www.thrustcurve.org/api/v1"
 
+        Notes
+        -----
+        - The cache prevents multiple network requests for the same motor name across sessions.
+        - Cached files are stored in `~/.rocketpy_cache` and reused unless `no_cache=True`.
+        - Filenames are sanitized to avoid invalid characters.
+        """
+        try:
+            CACHE_DIR.mkdir(exist_ok=True)
+        except OSError as e:
+            warnings.warn(f"Could not create cache directory: {e}. Caching disabled.")
+            no_cache = True
+        # File path in the cache
+        safe_name = re.sub(r"[^A-Za-z0-9_.-]", "_", name)
+        cache_file = CACHE_DIR / f"{safe_name}.eng.b64"
+        if not no_cache and cache_file.exists():
+            try:
+                return cache_file.read_text()
+            except (OSError, UnicodeDecodeError) as e:
+                warnings.warn(
+                    f"Failed to read cached motor file '{cache_file}': {e}. "
+                    "Fetching fresh data from API."
+                )
+
+        base_url = "https://www.thrustcurve.org/api/v1"
         # Step 1. Search motor
         response = requests.get(f"{base_url}/search.json", params={"commonName": name})
         response.raise_for_status()
@@ -1979,10 +2007,20 @@ class GenericMotor(Motor):
             raise ValueError(
                 f"Downloaded .eng data for motor '{name}' is empty or invalid."
             )
+        if not no_cache:
+            try:
+                cache_file.write_text(data_base64)
+            except (OSError, PermissionError) as e:
+                warnings.warn(
+                    f"Could not write to cache file '{cache_file}': {e}. "
+                    "Continuing without caching.",
+                    RuntimeWarning,
+                )
+
         return data_base64
 
     @staticmethod
-    def load_from_thrustcurve_api(name: str, **kwargs):
+    def load_from_thrustcurve_api(name: str, no_cache: bool = False, **kwargs):
         """
         Creates a Motor instance by downloading a .eng file from the ThrustCurve API
         based on the given motor name.
@@ -2010,7 +2048,7 @@ class GenericMotor(Motor):
             If a network or HTTP error occurs during the API call.
         """
 
-        data_base64 = GenericMotor._call_thrustcurve_api(name)
+        data_base64 = GenericMotor._call_thrustcurve_api(name, no_cache=no_cache)
         data_bytes = base64.b64decode(data_base64)
 
         # Step 3. Create the motor from the .eng file
