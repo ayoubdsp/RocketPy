@@ -24,7 +24,10 @@ def test_from_grid_is_multidimensional_property():
     cd_data = 0.1 + 0.2 * M + 1e-7 * R + 0.01 * A
 
     func_nd = Function.from_grid(
-        cd_data, [mach, reynolds, alpha], inputs=["Mach", "Reynolds", "Alpha"], outputs="Cd"
+        cd_data,
+        [mach, reynolds, alpha],
+        inputs=["Mach", "Reynolds", "Alpha"],
+        outputs="Cd",
     )
 
     assert hasattr(func_nd, "is_multidimensional")
