@@ -1415,7 +1415,10 @@ class Flight:
             # Use a small epsilon fallback if `mu` is zero, negative, NaN or infinite.
             try:
                 mu_val = float(mu)
-            except Exception:
+            except (TypeError, ValueError, OverflowError):
+                # Only catch errors related to invalid numeric conversion.
+                # Avoid catching broad Exception to satisfy linters and
+                # allow other unexpected errors to surface.
                 mu_val = 0.0
             if not np.isfinite(mu_val) or mu_val <= 0.0:
                 mu_safe = 1e-10
