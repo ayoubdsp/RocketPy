@@ -44,7 +44,7 @@ INTERPOLATION_TYPES = {
     "spline": 3,
     "shepard": 4,
     "rbf": 5,
-    "linear_grid": 6,
+    "regular_grid": 6,
 }
 EXTRAPOLATION_TYPES = {"zero": 0, "natural": 1, "constant": 2}
 
@@ -463,7 +463,7 @@ class Function:  # pylint: disable=too-many-public-methods
 
             self._interpolation_func = rbf_interpolation
 
-        elif interpolation == 6:  # linear_grid (RegularGridInterpolator)
+        elif interpolation == 6:  # regular_grid (RegularGridInterpolator)
             # For grid interpolation, the actual interpolator is stored separately
             # This function is a placeholder that should not be called directly
             # since __get_value_opt_grid is used instead
@@ -4000,11 +4000,16 @@ class Function:  # pylint: disable=too-many-public-methods
         elif self.__dom_dim__ > 1:
             if interpolation is None:
                 interpolation = "shepard"
-            if interpolation.lower() not in ["shepard", "linear", "rbf", "linear_grid"]:
+            if interpolation.lower() not in [
+                "shepard",
+                "linear",
+                "rbf",
+                "regular_grid",
+            ]:
                 warnings.warn(
                     (
                         "Interpolation method set to 'shepard'. The methods "
-                        "'linear', 'shepard', 'rbf' and 'linear_grid' are supported for "
+                        "'linear', 'shepard', 'rbf' and 'regular_grid' are supported for "
                         "multiple dimensions."
                     ),
                 )
@@ -4066,7 +4071,7 @@ class Function:  # pylint: disable=too-many-public-methods
         axes,
         inputs=None,
         outputs=None,
-        interpolation="linear_grid",
+        interpolation="regular_grid",
         extrapolation="constant",
         **kwargs,
     ):  # pylint: disable=too-many-statements #TODO: Refactor this method into smaller methods
@@ -4092,8 +4097,8 @@ class Function:  # pylint: disable=too-many-public-methods
         outputs : str, optional
             Name of the output variable. For example: 'Cd'.
         interpolation : str, optional
-            Interpolation method. Default is 'linear_grid'.
-            Currently only 'linear_grid' is supported for grid data.
+            Interpolation method. Default is 'regular_grid'.
+            Currently only 'regular_grid' is supported for grid data.
         extrapolation : str, optional
             Extrapolation behavior. Default is ``'constant'`` which clamps to
             edge values. Supported options are::
@@ -4236,8 +4241,21 @@ class Function:  # pylint: disable=too-many-public-methods
         # Set basic array attributes for compatibility
         func.x_array = axes[0]
         func.x_initial, func.x_final = axes[0][0], axes[0][-1]
-        func.y_array = func._image[: len(axes[0])]  # Placeholder
-        func.y_initial, func.y_final = func._image[0], func._image[-1]
+        # For grid-based (N-D) functions, a 1-D `y_array` is not a meaningful
+        # representation of the function values. Some legacy code paths and
+        # serialization expect a `y_array` attribute to exist, so provide the
+        # full flattened image for compatibility rather than a truncated slice.
+        # Callers should avoid relying on `y_array` for multidimensional
+        # Functions; use the interpolator / `get_value_opt` instead.
+        func.y_array = func._image
+        # Use the global min/max of the flattened image as a sensible
+        # `y_initial`/`y_final` for compatibility with code that inspects
+        # scalar bounds. These describe the image range, not an ordering
+        # along any particular axis.
+        func.y_initial, func.y_final = (
+            float(func._image.min()),
+            float(func._image.max()),
+        )
         if len(axes) > 2:
             func.z_array = axes[2]
             func.z_initial, func.z_final = axes[2][0], axes[2][-1]

@@ -1411,7 +1411,18 @@ class Flight:
             mu = self.env.dynamic_viscosity.get_value_opt(z)
             freestream_speed = np.linalg.norm(freestream_velocity_body)
             characteristic_length = 2 * self.rocket.radius  # Diameter
-            reynolds = rho * freestream_speed * characteristic_length / mu
+            # Defensive: avoid division by zero or non-finite viscosity values.
+            # Use a small epsilon fallback if `mu` is zero, negative, NaN or infinite.
+            try:
+                mu_val = float(mu)
+            except Exception:
+                mu_val = 0.0
+            if not np.isfinite(mu_val) or mu_val <= 0.0:
+                mu_safe = 1e-10
+            else:
+                mu_safe = mu_val
+
+            reynolds = rho * freestream_speed * characteristic_length / mu_safe
 
             # Calculate angle of attack
             # Angle between freestream velocity and rocket axis (z-axis in body frame)

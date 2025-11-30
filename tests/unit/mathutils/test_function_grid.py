@@ -141,11 +141,14 @@ def test_from_grid_backward_compatibility():
     assert func3(2) == 4
 
 
-def test_shepard_fallback_warning():
-    """Test that shepard_fallback is triggered and emits a warning.
+def test_regular_grid_without_grid_interpolator_warns():
+    """Test that setting `regular_grid` without a grid interpolator warns.
 
-    When linear_grid interpolation is set but no grid interpolator is available,
-    the Function class should fall back to shepard interpolation and emit a warning.
+    This test constructs a Function from scattered points (no structured
+    grid). If `regular_grid` interpolation is later selected without a
+    grid interpolator being configured, the implementation currently
+    falls back to shepard interpolation and should emit a warning. The
+    test ensures a warning is raised in this scenario.
     """
     # Create a 2D function with scattered points (not structured grid)
     source = [(0, 0, 0), (1, 0, 1), (0, 1, 2), (1, 1, 3)]
@@ -153,11 +156,11 @@ def test_shepard_fallback_warning():
         source=source, inputs=["x", "y"], outputs="z", interpolation="shepard"
     )
 
-    # Now manually change interpolation to linear_grid without setting up the grid
+    # Now manually change interpolation to regular_grid without setting up the grid
     # This simulates the fallback scenario
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        func.set_interpolation("linear_grid")
+        func.set_interpolation("regular_grid")
 
         # Check that a warning was issued
         assert len(w) == 1
@@ -168,7 +171,7 @@ def test_shepard_fallback_2d_interpolation():
     """Test that shepard_fallback produces correct interpolation for 2D data.
 
     This test verifies the fallback interpolation works correctly when
-    linear_grid is set without a grid interpolator.
+    regular_grid is set without a grid interpolator.
     """
     # Create a 2D function: z = x + y
     source = [
@@ -191,7 +194,7 @@ def test_shepard_fallback_2d_interpolation():
     # Trigger fallback
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")  # Suppress warnings for this test
-        func_fallback.set_interpolation("linear_grid")
+        func_fallback.set_interpolation("regular_grid")
 
     # Test that both produce the same results at exact points
     assert func_fallback(0, 0) == func_shepard(0, 0)
@@ -237,7 +240,7 @@ def test_shepard_fallback_3d_interpolation():
     # Trigger fallback
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        func_fallback.set_interpolation("linear_grid")
+        func_fallback.set_interpolation("regular_grid")
 
     # Test that both produce the same results at exact points
     assert func_fallback(0, 0, 0) == func_shepard(0, 0, 0)
@@ -270,7 +273,7 @@ def test_shepard_fallback_at_exact_data_points():
     # Trigger fallback
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        func.set_interpolation("linear_grid")
+        func.set_interpolation("regular_grid")
 
     # Test exact data points - should return exact values
     assert func(0, 0) == 10
