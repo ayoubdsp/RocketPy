@@ -106,7 +106,10 @@ def test_3d_drag_with_varying_alpha(example_plain_env, cesaroni_m1670):
     # Create a flat (alpha-agnostic) drag by averaging over alpha
     cd_flat = cd_data.mean(axis=2)
     drag_flat = Function.from_grid(
-        cd_flat, [mach, reynolds], inputs=["Mach", "Reynolds"], outputs="Cd",
+        cd_flat,
+        [mach, reynolds],
+        inputs=["Mach", "Reynolds"],
+        outputs="Cd",
     )
 
     # Use fixtures for environment and motor

@@ -367,6 +367,18 @@ class Function:  # pylint: disable=too-many-public-methods
             self.__set_extrapolation_func()
         return self
 
+    @property
+    def is_multidimensional(self):
+        """Return True when the Function has domain dimension greater than 1.
+
+        This abstracts checks for multi-dimensionality so callers don't need
+        to inspect internal attributes like ``__inputs__`` or ``__dom_dim__``.
+        """
+        try:
+            return int(self.__dom_dim__) > 1
+        except Exception:
+            return False
+
     def __set_interpolation_func(self):  # pylint: disable=too-many-statements
         """Defines interpolation function used by the Function. Each
         interpolation method has its own function`.

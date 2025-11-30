@@ -1398,8 +1398,10 @@ class Flight:
         float
             Drag coefficient value
         """
-        # Check if drag function is multi-dimensional by examining its inputs
-        if hasattr(drag_function, "__inputs__") and len(drag_function.__inputs__) > 1:
+        # Check if drag function is multi-dimensional using Function API
+        if isinstance(drag_function, Function) and getattr(
+            drag_function, "is_multidimensional", False
+        ):
             # Multi-dimensional drag function - calculate additional parameters
 
             # Calculate Reynolds number
