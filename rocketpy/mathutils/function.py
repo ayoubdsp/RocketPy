@@ -376,7 +376,7 @@ class Function:  # pylint: disable=too-many-public-methods
         """
         try:
             return int(self.__dom_dim__) > 1
-        except Exception:
+        except (AttributeError, TypeError):
             return False
 
     def __set_interpolation_func(self):  # pylint: disable=too-many-statements

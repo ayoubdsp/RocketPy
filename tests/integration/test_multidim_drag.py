@@ -74,8 +74,13 @@ def test_flight_with_3d_drag_basic(example_plain_env, cesaroni_m1670):
     assert hasattr(flight, "angle_of_attack")
 
 
-def test_3d_drag_with_varying_alpha(example_plain_env, cesaroni_m1670):
-    """Test that 3D drag responds to angle of attack changes."""
+def test_3d_drag_with_varying_alpha():
+    """Test that 3D drag responds to angle of attack changes.
+
+    This test only verifies the Function mapping from alpha -> Cd. The
+    integration-level comparison is placed in a separate test to keep each
+    test function small and easier to lint/maintain.
+    """
     # Create drag function with strong alpha dependency
     mach = np.array([0.0, 0.5, 1.0, 1.5])
     reynolds = np.array([1e5, 1e6])
@@ -102,103 +107,50 @@ def test_3d_drag_with_varying_alpha(example_plain_env, cesaroni_m1670):
     assert cd_10 > cd_0
     assert cd_10 - cd_0 > 0.2  # Should show significant difference
 
-    # --- Integration test: verify flight uses alpha-dependent Cd ---
-    # Create a flat (alpha-agnostic) drag by averaging over alpha
-    cd_flat = cd_data.mean(axis=2)
-    drag_flat = Function.from_grid(
-        cd_flat,
-        [mach, reynolds],
-        inputs=["Mach", "Reynolds"],
-        outputs="Cd",
-    )
 
-    # Use fixtures for environment and motor
-    env = example_plain_env
-    env.set_atmospheric_model(type="standard_atmosphere")
-    motor = cesaroni_m1670
-
-    # Build two rockets: one that uses alpha-sensitive drag, one flat
-    rocket_alpha = Rocket(
-        radius=0.0635,
-        mass=16.24,
-        inertia=(6.321, 6.321, 0.034),
-        power_off_drag=drag_func,
-        power_on_drag=drag_func,
-        center_of_mass_without_motor=0,
-        coordinate_system_orientation="tail_to_nose",
-    )
-    rocket_alpha.set_rail_buttons(0.2, -0.5, 30)
-    rocket_alpha.add_motor(motor, position=-1.255)
-
-    rocket_flat = Rocket(
-        radius=0.0635,
-        mass=16.24,
-        inertia=(6.321, 6.321, 0.034),
-        power_off_drag=drag_flat,
-        power_on_drag=drag_flat,
-        center_of_mass_without_motor=0,
-        coordinate_system_orientation="tail_to_nose",
-    )
-    rocket_flat.set_rail_buttons(0.2, -0.5, 30)
-    rocket_flat.add_motor(motor, position=-1.255)
-
-    # Run flights
-    flight_alpha = Flight(
-        rocket=rocket_alpha,
-        environment=env,
-        rail_length=5.2,
-        inclination=85,
-        heading=0,
-    )
-
-    flight_flat = Flight(
-        rocket=rocket_flat,
-        environment=env,
-        rail_length=5.2,
-        inclination=85,
-        heading=0,
-    )
+def test_flight_apogee_diff(flight_alpha, flight_flat):
+    """Run paired flights (fixtures) and assert their apogees differ."""
 
     # Flights should both launch
     assert flight_alpha.apogee > 100
     assert flight_flat.apogee > 100
 
-    # The two rockets should behave differently since one depends on alpha
-    # while the other uses a flat-averaged Cd. Do not assume which direction
-    # is larger (depends on encountered alpha vs averaged alpha) but ensure
-    # the apogees differ.
+    # Apogees should differ
     assert flight_alpha.apogee != flight_flat.apogee
 
-    # Additionally, sample Cd during flight from aerodynamic state and
-    # compare values computed from each rocket's drag function at the
-    # same time index to ensure alpha actually affects the evaluated Cd.
-    # Use mid-ascent index (avoid t=0). Find a time index where speed > 5 m/s
+
+def test_flight_cd_sample_consistency(flight_alpha, flight_flat):
+    """Sample Cd during a flight and ensure Cd difference matches apogee ordering.
+
+    Uses the `flight_alpha` and `flight_flat` fixtures which provide paired
+    flights constructed with alpha-dependent and alpha-averaged Cd functions.
+    """
+
+    # Sample a mid-ascent time and compare Cd evaluations
     speeds = flight_alpha.free_stream_speed[:, 1]
-    times = flight_alpha.time
     idx_candidates = np.where(speeds > 5)[0]
     assert idx_candidates.size > 0
     idx = idx_candidates[len(idx_candidates) // 2]
-    t_sample = times[idx]
+    t_sample = flight_alpha.time[idx]
 
     mach_sample = flight_alpha.mach_number.get_value_opt(t_sample)
-    rho_sample = flight_alpha.density.get_value_opt(t_sample)
-    mu_sample = flight_alpha.dynamic_viscosity.get_value_opt(t_sample)
-    V_sample = flight_alpha.free_stream_speed.get_value_opt(t_sample)
-    reynolds_sample = rho_sample * V_sample * (2 * rocket_alpha.radius) / mu_sample
+    v_sample = flight_alpha.free_stream_speed.get_value_opt(t_sample)
+    reynolds_sample = (
+        flight_alpha.density.get_value_opt(t_sample)
+        * v_sample
+        * (2 * flight_alpha.rocket.radius)
+        / flight_alpha.dynamic_viscosity.get_value_opt(t_sample)
+    )
     alpha_sample = flight_alpha.angle_of_attack.get_value_opt(t_sample)
 
-    cd_alpha_sample = rocket_alpha.power_on_drag.get_value_opt(
+    cd_alpha_sample = flight_alpha.rocket.power_on_drag.get_value_opt(
         mach_sample, reynolds_sample, alpha_sample
     )
-    cd_flat_sample = rocket_flat.power_on_drag.get_value_opt(
+    cd_flat_sample = flight_flat.rocket.power_on_drag.get_value_opt(
         mach_sample, reynolds_sample
     )
 
-    # Alpha-sensitive Cd should differ from the flat Cd at the sampled time
     assert cd_alpha_sample != cd_flat_sample
-
-    # Ensure the sign of the Cd difference is consistent with the apogee
-    # ordering: larger Cd -> lower apogee
     if cd_alpha_sample > cd_flat_sample:
         assert flight_alpha.apogee < flight_flat.apogee
     else:
