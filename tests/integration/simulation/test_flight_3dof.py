@@ -70,7 +70,7 @@ def flight_weathercock_zero(example_plain_env, point_mass_rocket):
 
 @pytest.fixture
 def flight_3dof(example_plain_env, point_mass_rocket):
-    """Creates a standard 3-DOF Flight fixture with default weathercock_coeff=1.0.
+    """Creates a standard 3-DOF Flight fixture with default weathercock_coeff=0.0.
 
     Returns
     -------
@@ -82,6 +82,24 @@ def flight_3dof(example_plain_env, point_mass_rocket):
         environment=example_plain_env,
         rail_length=1,
         simulation_mode="3 DOF",
+    )
+
+
+@pytest.fixture
+def flight_weathercock_pos(example_plain_env, point_mass_rocket):
+    """Creates a Flight fixture with weathercock_coeff set to 1.0.
+
+    Returns
+    -------
+    rocketpy.simulation.flight.Flight
+        A Flight object configured for 3-DOF with weathercocking enabled.
+    """
+    return Flight(
+        rocket=point_mass_rocket,
+        environment=example_plain_env,
+        rail_length=1,
+        simulation_mode="3 DOF",
+        weathercock_coeff=1.0,
     )
 
 
@@ -180,7 +198,7 @@ def test_weathercock_coeff_stored(example_plain_env, point_mass_rocket):
 
 
 def test_weathercock_coeff_default(flight_3dof):
-    """Tests that the default weathercock_coeff is 1.0.
+    """Tests that the default weathercock_coeff is 0.0 (no weathercocking).
 
     Parameters
     ----------
@@ -189,7 +207,7 @@ def test_weathercock_coeff_default(flight_3dof):
     point_mass_rocket : rocketpy.PointMassRocket
         A point mass rocket fixture for 3-DOF simulation.
     """
-    assert flight_3dof.weathercock_coeff == 1.0
+    assert flight_3dof.weathercock_coeff == 0.0
 
 
 def test_weathercock_zero_gives_fixed_attitude(flight_weathercock_zero):
@@ -201,7 +219,7 @@ def test_weathercock_zero_gives_fixed_attitude(flight_weathercock_zero):
     ----------
     example_plain_env : rocketpy.Environment
         A basic environment fixture for flight simulation.
-    point_mass_rocket : rocketpy.PointMassRocket
+    point_mass_rocket : rocketpy.PointMassMotor
         A point mass rocket fixture for 3-DOF simulation.
     """
     flight = flight_weathercock_zero
@@ -215,7 +233,7 @@ def test_weathercock_zero_gives_fixed_attitude(flight_weathercock_zero):
     assert all(abs(ed) < 1e-10 for ed in e_dot), "Quaternion derivatives should be zero"
 
 
-def test_weathercock_nonzero_evolves_attitude(flight_3dof):
+def test_weathercock_nonzero_evolves_attitude(flight_weathercock_pos):
     """Tests that non-zero weathercock_coeff causes attitude evolution.
     When the body axis is misaligned with the relative wind and weathercock_coeff
     is positive, the quaternion derivatives should be non-zero.
@@ -227,7 +245,7 @@ def test_weathercock_nonzero_evolves_attitude(flight_3dof):
     point_mass_rocket : rocketpy.PointMassRocket
         A point mass rocket fixture for 3-DOF simulation.
     """
-    flight = flight_3dof
+    flight = flight_weathercock_pos
     # Create a state with misaligned body axis
     # Body pointing straight up (e0=1, e1=e2=e3=0) but velocity is horizontal
     # [x, y, z, vx, vy, vz, e0, e1, e2, e3, w1, w2, w3]
@@ -240,7 +258,7 @@ def test_weathercock_nonzero_evolves_attitude(flight_3dof):
     assert e_dot_magnitude > 1e-6, "Quaternion derivatives should be non-zero"
 
 
-def test_weathercock_aligned_no_evolution(flight_3dof):
+def test_weathercock_aligned_no_evolution(flight_weathercock_pos):
     """Tests that when body axis is aligned with relative wind, no rotation occurs.
     When the rocket's body z-axis is already aligned with the negative of the
     freestream velocity, the quaternion derivatives should be approximately zero.
@@ -252,7 +270,7 @@ def test_weathercock_aligned_no_evolution(flight_3dof):
     point_mass_rocket : rocketpy.PointMassRocket
         A point mass rocket fixture for 3-DOF simulation.
     """
-    flight = flight_3dof
+    flight = flight_weathercock_pos
     # Body pointing in +x direction (into the wind for vx=50)
     # Quaternion for 90 degree rotation about y-axis uses half-angle:
     # e0=cos(90°/2)=cos(45°), e2=sin(90°/2)=sin(45°)
@@ -269,14 +287,14 @@ def test_weathercock_aligned_no_evolution(flight_3dof):
     )
 
 
-def test_weathercock_anti_aligned_uses_perp_axis_and_evolves(flight_3dof):
+def test_weathercock_anti_aligned_uses_perp_axis_and_evolves(flight_weathercock_pos):
     """Tests the anti-aligned case where body z-axis is opposite freestream.
 
     This should exercise the branch that selects a perpendicular axis (y-axis)
     when the cross with x-axis is nearly zero, producing a non-zero quaternion
     derivative.
     """
-    flight = flight_3dof
+    flight = flight_weathercock_pos
 
     sqrt2_2 = np.sqrt(2) / 2
     # Build quaternion that makes body z-axis = [-1, 0, 0]

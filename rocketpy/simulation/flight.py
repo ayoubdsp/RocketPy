@@ -492,7 +492,7 @@ class Flight:
         equations_of_motion="standard",
         ode_solver="LSODA",
         simulation_mode="6 DOF",
-        weathercock_coeff=None,
+        weathercock_coeff=0.0,
     ):
         """Run a trajectory simulation.
 
@@ -581,8 +581,9 @@ class Flight:
             aligns with the relative wind direction in 3-DOF simulations, in rad/s.
             A higher value means faster alignment (quasi-static weathercocking).
             This parameter is only used when simulation_mode is '3 DOF'.
-            Default is 1.0, which provides moderate alignment. Set to 0 to
-            disable weathercocking (fixed attitude).
+            Default is 0.0 to mimic a pure 3-DOF simulation without any
+            weathercocking (fixed attitude). Set to a positive value to enable
+            quasi-static weathercocking behaviour.
 
 
         Returns
