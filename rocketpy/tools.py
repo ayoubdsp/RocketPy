@@ -25,8 +25,34 @@ from cftime import num2pydate
 from matplotlib.patches import Ellipse
 from packaging import version as packaging_version
 
-# Mapping of module name and the name of the package that should be installed
 INSTALL_MAPPING = {"IPython": "ipython"}
+
+
+def tuple_handler(value):
+    """Transforms the input value into a tuple that represents a range. If the
+    input is an int or float, the output is a tuple from zero to the input
+    value. If the input is a tuple or list, the output is a tuple with the same
+    range.
+
+    Parameters
+    ----------
+    value : int, float, tuple, list
+        Input value.
+
+    Returns
+    -------
+    tuple
+        Tuple that represents the inputted range.
+    """
+    if isinstance(value, (int, float)):
+        return (0, value)
+    elif isinstance(value, (list, tuple)):
+        if len(value) == 1:
+            return (0, value[0])
+        elif len(value) == 2:
+            return tuple(value)
+        else:
+            raise ValueError("value must be a list or tuple of length 1 or 2.")
 
 
 def deprecated(reason=None, version=None, alternative=None):
@@ -87,33 +113,6 @@ def deprecated(reason=None, version=None, alternative=None):
         return wrapper
 
     return decorator
-
-
-def tuple_handler(value):
-    """Transforms the input value into a tuple that represents a range. If the
-    input is an int or float, the output is a tuple from zero to the input
-    value. If the input is a tuple or list, the output is a tuple with the same
-    range.
-
-    Parameters
-    ----------
-    value : int, float, tuple, list
-        Input value.
-
-    Returns
-    -------
-    tuple
-        Tuple that represents the inputted range.
-    """
-    if isinstance(value, (int, float)):
-        return (0, value)
-    elif isinstance(value, (list, tuple)):
-        if len(value) == 1:
-            return (0, value[0])
-        elif len(value) == 2:
-            return tuple(value)
-        else:
-            raise ValueError("value must be a list or tuple of length 1 or 2.")
 
 
 def calculate_cubic_hermite_coefficients(x0, x1, y0, yp0, y1, yp1):
@@ -182,13 +181,12 @@ def find_roots_cubic_function(a, b, c, d):
     Examples
     --------
     >>> from rocketpy.tools import find_roots_cubic_function
-    >>> import cmath
 
     First we define the coefficients of the function ax**3 + bx**2 + cx + d
     >>> a, b, c, d = 1, -3, -1, 3
     >>> x1, x2, x3 = find_roots_cubic_function(a, b, c, d)
-    >>> cmath.isclose(x1, (-1+0j))
-    True
+    >>> x1
+    (-1+0j)
 
     To get the real part of the roots, use the real attribute of the complex
     number.
@@ -1081,31 +1079,128 @@ def exponential_backoff(max_attempts, base_delay=1, max_delay=60):
     return decorator
 
 
-def parallel_axis_theorem_from_com(com_inertia_moment, mass, distance):
-    """Calculates the moment of inertia of a object relative to a new axis using
-    the parallel axis theorem. The new axis is parallel to and at a distance
-    'distance' from the original axis, which *must* passes through the object's
-    center of mass.
+def _pat_dynamic_helper(com_inertia_moment, mass, distance_vec_3d, axes_term_lambda):
+    "Local import to break circular dependency with mathutils.function"
+    from rocketpy.mathutils.function import (
+        Function,
+    )  # pylint: disable=import-outside-toplevel
+    from rocketpy.mathutils.vector_matrix import (
+        Vector,
+    )  # pylint: disable=import-outside-toplevel
 
-    Parameters
-    ----------
-    com_inertia_moment : float
-        Moment of inertia relative to the center of mass of the object.
-    mass : float
-        Mass of the object.
-    distance : float
-        Perpendicular distance between the original and new axis.
+    is_dynamic = (
+        isinstance(com_inertia_moment, Function)
+        or isinstance(mass, Function)
+        or isinstance(distance_vec_3d, Function)
+    )
 
-    Returns
-    -------
-    float
-        Moment of inertia relative to the new axis.
+    def get_val(arg, t):
 
-    References
-    ----------
-    https://en.wikipedia.org/wiki/Parallel_axis_theorem
-    """
-    return com_inertia_moment + mass * distance**2
+        return arg(t) if isinstance(arg, Function) else arg
+
+    if not is_dynamic:
+
+        d_vec = Vector(distance_vec_3d)
+        mass_term = mass * axes_term_lambda(d_vec)
+        return com_inertia_moment + mass_term
+    else:
+
+        def new_source(t):
+            d_vec_t = get_val(distance_vec_3d, t)
+            mass_t = get_val(mass, t)
+            inertia_t = get_val(com_inertia_moment, t)
+
+            mass_term = mass_t * axes_term_lambda(d_vec_t)
+            return inertia_t + mass_term
+
+        return Function(new_source, inputs="t", outputs="Inertia (kg*m^2)")
+
+
+def _pat_dynamic_product_helper(
+    com_inertia_product, mass, distance_vec_3d, product_term_lambda
+):
+    "Local import to break circular dependency with mathutils.function"
+    from rocketpy.mathutils.function import (
+        Function,
+    )  # pylint: disable=import-outside-toplevel
+    from rocketpy.mathutils.vector_matrix import (
+        Vector,
+    )  # pylint: disable=import-outside-toplevel
+
+    is_dynamic = (
+        isinstance(com_inertia_product, Function)
+        or isinstance(mass, Function)
+        or isinstance(distance_vec_3d, Function)
+    )
+
+    def get_val(arg, t):
+
+        return arg(t) if isinstance(arg, Function) else arg
+
+    if not is_dynamic:
+
+        d_vec = Vector(distance_vec_3d)
+        mass_term = mass * product_term_lambda(d_vec)
+        return com_inertia_product + mass_term
+    else:
+
+        def new_source(t):
+            d_vec_t = get_val(distance_vec_3d, t)
+            mass_t = get_val(mass, t)
+            inertia_t = get_val(com_inertia_product, t)
+
+            mass_term = mass_t * product_term_lambda(d_vec_t)
+            return inertia_t + mass_term
+
+        return Function(new_source, inputs="t", outputs="Inertia (kg*m^2)")
+
+
+# pylint: disable=invalid-name
+def parallel_axis_theorem_I11(com_inertia_moment, mass, distance_vec_3d):
+
+    return _pat_dynamic_helper(
+        com_inertia_moment, mass, distance_vec_3d, lambda d_vec: d_vec.y**2 + d_vec.z**2
+    )
+
+
+# pylint: disable=invalid-name
+def parallel_axis_theorem_I22(com_inertia_moment, mass, distance_vec_3d):
+
+    return _pat_dynamic_helper(
+        com_inertia_moment, mass, distance_vec_3d, lambda d_vec: d_vec.x**2 + d_vec.z**2
+    )
+
+
+# pylint: disable=invalid-name
+def parallel_axis_theorem_I33(com_inertia_moment, mass, distance_vec_3d):
+
+    return _pat_dynamic_helper(
+        com_inertia_moment, mass, distance_vec_3d, lambda d_vec: d_vec.x**2 + d_vec.y**2
+    )
+
+
+# pylint: disable=invalid-name
+def parallel_axis_theorem_I12(com_inertia_product, mass, distance_vec_3d):
+
+    return _pat_dynamic_product_helper(
+        com_inertia_product, mass, distance_vec_3d, lambda d_vec: d_vec.x * d_vec.y
+    )
+
+
+# pylint: disable=invalid-name
+def parallel_axis_theorem_I13(com_inertia_product, mass, distance_vec_3d):
+
+    return _pat_dynamic_product_helper(
+        com_inertia_product, mass, distance_vec_3d, lambda d_vec: d_vec.x * d_vec.z
+    )
+
+
+# pylint: disable=invalid-name
+def parallel_axis_theorem_I23(com_inertia_product, mass, distance_vec_3d):
+
+    return _pat_dynamic_product_helper(
+        com_inertia_product, mass, distance_vec_3d, lambda d_vec: d_vec.y * d_vec.z
+    )
 
 
 # Flight
@@ -1294,43 +1389,6 @@ def from_hex_decode(obj_bytes, decoder=base64.b85decode):
         Object converted from bytes.
     """
     return dill.loads(decoder(bytes.fromhex(obj_bytes)))
-
-
-def find_obj_from_hash(obj, hash_, depth_limit=None):
-    """Searches the object (and its children) for
-    an object whose '__rpy_hash' field has a particular hash value.
-
-    Parameters
-    ----------
-    obj : object
-        Object to search.
-    hash_ : int
-        Hash value to search for in the '__rpy_hash' field.
-    depth_limit : int, optional
-        Maximum depth to search recursively. If None, no limit.
-
-    Returns
-    -------
-    object
-        The object whose '__rpy_hash' matches hash_, or None if not found.
-    """
-
-    stack = [(obj, 0)]
-    while stack:
-        current_obj, current_depth = stack.pop()
-        if depth_limit is not None and current_depth > depth_limit:
-            continue
-
-        if getattr(current_obj, "__rpy_hash", None) == hash_:
-            return current_obj
-
-        if isinstance(current_obj, dict):
-            stack.extend((v, current_depth + 1) for v in current_obj.values())
-
-        elif isinstance(current_obj, (list, tuple, set)):
-            stack.extend((item, current_depth + 1) for item in current_obj)
-
-    return None
 
 
 if __name__ == "__main__":  # pragma: no cover
