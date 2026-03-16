@@ -39,8 +39,13 @@ class ClusterMotor(Motor):
         self.radius = radius
         dry_inertia_cluster = self._calculate_dry_inertia()
 
+        # Use a thrust source scaled by the number of motors so that
+        # all thrust-derived quantities computed by the base Motor class
+        # correspond to the full cluster rather than a single motor.
+        scaled_thrust_source = motor.thrust * number
+
         super().__init__(
-            thrust_source=motor.thrust_source,
+            thrust_source=scaled_thrust_source,
             nozzle_radius=motor.nozzle_radius,
             burn_time=motor.burn_time,
             dry_mass=motor.dry_mass * number,
@@ -57,7 +62,6 @@ class ClusterMotor(Motor):
         self.grain_initial_inner_radius = motor.grain_initial_inner_radius
         self.grain_initial_height = motor.grain_initial_height
         self.grains_center_of_mass_position = motor.grains_center_of_mass_position
-        self._thrust = self.motor.thrust * self.number
         self._propellant_mass = self.motor.propellant_mass * self.number
         self._propellant_initial_mass = self.number * self.motor.propellant_initial_mass
         self._center_of_propellant_mass = self.motor.center_of_propellant_mass
