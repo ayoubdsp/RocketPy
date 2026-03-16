@@ -46,7 +46,7 @@ def test_cluster_initialization(base_motor):
 
 def test_cluster_mass_and_thrust_scaling(base_motor):
     """
-    Tests if scalar properties (Thrust, Mass) are correctly multiplied by N.
+    Tests if scalar and derived properties are correctly multiplied by N and that functional properties preserve their Function behavior
     """
     N = 4
     R = 0.2
@@ -61,6 +61,9 @@ def test_cluster_mass_and_thrust_scaling(base_motor):
     
     # 3. Check Propellant Mass Scaling
     assert np.isclose(cluster.propellant_mass(0), base_motor.propellant_mass(0) * N)
+    assert np.isclose(cluster.total_impulse, base_motor.total_impulse * N)
+    assert np.isclose(cluster.average_thrust, base_motor.average_thrust * N)
+
 
 def test_cluster_dry_inertia_steiner_theorem(base_motor):
     """

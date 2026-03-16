@@ -34,6 +34,18 @@ class ClusterMotor(Motor):
         radius : float
             Distance from center of rocket to center of motor (m).
         """
+        if not isinstance(number, int):
+            raise TypeError(f"number must be an int, got {type(number).__name__}")
+        if number < 2:
+            raise ValueError("number must be >= 2 for a ClusterMotor")
+        if not isinstance(radius, (int, float)):
+            raise TypeError(f"radius must be a real number, got {type(radius).__name__}")
+        if radius < 0:
+            raise ValueError("radius must be non-negative")
+            
+        self.motor = motor
+        self.number = number
+        self.radius = float(radius)
         self.motor = motor
         self.number = number
         self.radius = radius
@@ -158,9 +170,9 @@ class ClusterMotor(Motor):
     @propellant_I_23.setter
     def propellant_I_23(self, value):
         self._propellant_I_23 = value
-
-    def exhaust_velocity(self, t):
-        return self.motor.exhaust_velocity(t)
+    @property
+    def exhaust_velocity(self):
+        return self.motor.exhaust_velocity
 
     def _calculate_dry_inertia(self):
         Ixx_loc = self.motor.dry_I_11
@@ -169,11 +181,10 @@ class ClusterMotor(Motor):
         m_dry = self.motor.dry_mass
 
         Izz_cluster = self.number * Izz_loc + self.number * m_dry * (self.radius**2)
-        I_transverse = self.number * Ixx_loc + (self.number / 2) * m_dry * (
-            self.radius**2
-        )
+        Ixx_cluster = self.number * Ixx_loc + (self.number / 2) * m_dry * (self.radius**2)
+        Iyy_cluster = self.number * Iyy_loc + (self.number / 2) * m_dry * (self.radius**2)
 
-        return (I_transverse, I_transverse, Izz_cluster)
+        return (Ixx_cluster, Iyy_cluster, Izz_cluster)
 
     def info(self):
         print(f"Cluster Configuration:")
@@ -181,7 +192,8 @@ class ClusterMotor(Motor):
         print(f" - Radial Distance: {self.radius} m")
         return self.motor.info()
 
-    def draw_cluster_layout(self, rocket_radius=None):
+    def draw_cluster_layout(self, rocket_radius=None,show=True):
+        """Draw the geometric layout of the clustered motors."""
         fig, ax = plt.subplots(figsize=(6, 6))
         ax.plot(0, 0, "k+", markersize=10, label="Central axis")
         if rocket_radius:
@@ -229,4 +241,8 @@ class ClusterMotor(Motor):
         ax.set_title(f"Cluster Configuration : {self.number} engines")
         ax.grid(True, linestyle=":", alpha=0.6)
         ax.legend(loc="upper right")
-        plt.show()
+        if show:
+            plt.show()
+        return fig, ax
+    
+        
