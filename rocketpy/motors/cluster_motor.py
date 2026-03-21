@@ -1,3 +1,4 @@
+# pylint: disable=invalid-name
 import matplotlib.pyplot as plt
 import numpy as np
 from rocketpy import Function
@@ -48,9 +49,6 @@ class ClusterMotor(Motor):
         self.motor = motor
         self.number = number
         self.radius = float(radius)
-        self.motor = motor
-        self.number = number
-        self.radius = radius
         dry_inertia_cluster = self._calculate_dry_inertia()
 
         # Use a thrust source scaled by the number of motors so that
@@ -69,16 +67,14 @@ class ClusterMotor(Motor):
             interpolation_method="linear",
         )
 
-        self.throat_radius = motor.throat_radius
-        self.grain_number = motor.grain_number
-        self.grain_density = motor.grain_density
-        self.grain_outer_radius = motor.grain_outer_radius
-        self.grain_initial_inner_radius = motor.grain_initial_inner_radius
-        self.grain_initial_height = motor.grain_initial_height
-        self.grains_center_of_mass_position = motor.grains_center_of_mass_position
+        self._setup_grain_properties()
         self._propellant_mass = self.motor.propellant_mass * self.number
         self._propellant_initial_mass = self.number * self.motor.propellant_initial_mass
         self._center_of_propellant_mass = self.motor.center_of_propellant_mass
+        self._evaluate_propellant_inertia()
+
+    def _evaluate_propellant_inertia(self):
+        """Calculates the dynamic inertia of the propellant using Steiner's theorem."""
         Ixx_term1 = self.motor.propellant_I_11 * self.number
         Ixx_term2 = self.motor.propellant_mass * (0.5 * self.number * self.radius**2)
         self._propellant_I_11 = Ixx_term1 + Ixx_term2
@@ -92,6 +88,16 @@ class ClusterMotor(Motor):
         self._propellant_I_12 = zero_func
         self._propellant_I_13 = zero_func
         self._propellant_I_23 = zero_func
+
+    def _setup_grain_properties(self):
+        """Copies the grain properties from the base motor."""
+        self.throat_radius = self.motor.throat_radius
+        self.grain_number = self.motor.grain_number
+        self.grain_density = self.motor.grain_density
+        self.grain_outer_radius = self.motor.grain_outer_radius
+        self.grain_initial_inner_radius = self.motor.grain_initial_inner_radius
+        self.grain_initial_height = self.motor.grain_initial_height
+        self.grains_center_of_mass_position = self.motor.grains_center_of_mass_position
 
     @property
     def thrust(self):
@@ -217,6 +223,21 @@ class ClusterMotor(Motor):
             limit = rocket_radius * 1.2
         else:
             limit = self.radius * 2
+        self._draw_engines(ax)
+        ax.set_aspect("equal", "box")
+        ax.set_xlim(-limit, limit)
+        ax.set_ylim(-limit, limit)
+        ax.set_xlabel("Position X (m)")
+        ax.set_ylabel("Position Y (m)")
+        ax.set_title(f"Cluster Configuration : {self.number} engines")
+        ax.grid(True, linestyle=":", alpha=0.6)
+        ax.legend(loc="upper right")
+        if show:
+            plt.show()
+        return fig, ax
+
+    def _draw_engines(self, ax):
+        """Draws the individual engines of the cluster."""
         motor_outer_radius = self.grain_outer_radius
         angles = np.linspace(0, 2 * np.pi, self.number, endpoint=False)
 
@@ -240,14 +261,3 @@ class ClusterMotor(Motor):
                 va="center",
                 fontweight="bold",
             )
-        ax.set_aspect("equal", "box")
-        ax.set_xlim(-limit, limit)
-        ax.set_ylim(-limit, limit)
-        ax.set_xlabel("Position X (m)")
-        ax.set_ylabel("Position Y (m)")
-        ax.set_title(f"Cluster Configuration : {self.number} engines")
-        ax.grid(True, linestyle=":", alpha=0.6)
-        ax.legend(loc="upper right")
-        if show:
-            plt.show()
-        return fig, ax
