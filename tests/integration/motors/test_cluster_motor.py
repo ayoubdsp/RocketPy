@@ -121,29 +121,31 @@ def test_cluster_propellant_inertia_dynamic(base_motor):
     assert np.isclose(cluster.propellant_I_11(t), expected_Ixx)
     assert np.isclose(cluster.propellant_I_33(t), expected_Izz)
 
+
 def test_cluster_invalid_inputs(base_motor):
     """Tests if the validation raises errors for bad inputs."""
     with pytest.raises(ValueError):
-        ClusterMotor(motor=base_motor, number=1, radius=0.5) # N < 2
+        ClusterMotor(motor=base_motor, number=1, radius=0.5)  # N < 2
     with pytest.raises(ValueError):
-        ClusterMotor(motor=base_motor, number=2, radius=-1.0) # Radius < 0
+        ClusterMotor(motor=base_motor, number=2, radius=-1.0)  # Radius < 0
     with pytest.raises(TypeError):
-        ClusterMotor(motor=base_motor, number="two", radius=0.5) # N is string
+        ClusterMotor(motor=base_motor, number="two", radius=0.5)  # N is string
+
 
 def test_cluster_methods_and_setters(base_motor):
     """Touches the display methods and setters to ensure coverage."""
     cluster = ClusterMotor(motor=base_motor, number=2, radius=0.5)
-    
+
     # 1. Touch the info method
     cluster.info()
-    
+
     # 2. Touch the draw method (without showing the plot to avoid blocking tests)
     cluster.draw_cluster_layout(show=False)
     cluster.draw_cluster_layout(rocket_radius=0.1, show=False)
-    
+
     # 3. Touch a few setters
     cluster.propellant_mass = 50.0
     assert cluster.propellant_mass == 50.0
-    
+
     cluster.propellant_I_11 = 2.0
     assert cluster.propellant_I_11 == 2.0
