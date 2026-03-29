@@ -1,3 +1,4 @@
+# pylint: disable=invalid-name
 import pytest
 import numpy as np
 from rocketpy import SolidMotor, Function
@@ -63,7 +64,7 @@ def test_cluster_mass_and_thrust_scaling(base_motor):
     assert np.isclose(cluster.dry_mass, base_motor.dry_mass * N)
 
     # 3. Check Propellant Mass Scaling
-    assert np.isclose(cluster.propellant_mass(0), base_motor.propellant_mass(0) * N)
+    assert np.isclose(cluster.propellant_mass, base_motor.propellant_mass(0) * N)
     assert np.isclose(cluster.total_impulse, base_motor.total_impulse * N)
     assert np.isclose(cluster.average_thrust, base_motor.average_thrust * N)
 
@@ -118,8 +119,8 @@ def test_cluster_propellant_inertia_dynamic(base_motor):
     # Expected Dynamic Izz
     expected_Izz = (Izz_prop_loc * N) + (m_prop * N * R**2)
 
-    assert np.isclose(cluster.propellant_I_11(t), expected_Ixx)
-    assert np.isclose(cluster.propellant_I_33(t), expected_Izz)
+    assert np.isclose(cluster.propellant_I_11, expected_Ixx)
+    assert np.isclose(cluster.propellant_I_33, expected_Izz)
 
 
 def test_cluster_invalid_inputs(base_motor):
