@@ -5,12 +5,18 @@ from rocketpy import Function
 from rocketpy.motors import Motor
 
 
-class ClusterMotor(Motor):
+class RingClusterMotor(Motor):
     """
     A class representing a cluster of N identical motors arranged symmetrically.
 
-    This class aggregates the physical properties (thrust, mass, inertia) of
-    multiple motors using the Parallel Axis Theorem (Huygens-Steiner theorem).
+    This class models a ring (annular) cluster configuration where a specific
+    number of identical motors (N >= 2) are arranged symmetrically along a
+    circular perimeter of a given radius. Note that this model assumes no
+    central motor is present along the rocket's longitudinal axis. The total
+    inertia tensors (Ixx and Iyy) are computed by explicitly summing the
+    contribution of each individual motor based on its angular position,
+    ensuring mathematical accuracy for all configurations, including the
+    asymmetric transverse inertia case of N=2.
 
     Attributes
     ----------
@@ -75,10 +81,16 @@ class ClusterMotor(Motor):
 
     def _evaluate_propellant_inertia(self):
         """Calculates the dynamic inertia of the propellant using Steiner's theorem."""
-        Ixx_term1 = self.motor.propellant_I_11 * self.number
-        Ixx_term2 = self.motor.propellant_mass * (0.5 * self.number * self.radius**2)
-        self._propellant_I_11 = Ixx_term1 + Ixx_term2
-        self._propellant_I_22 = self._propellant_I_11
+        self._propellant_I_11 = self.motor.propellant_I_11 * self.number
+        self._propellant_I_22 = self.motor.propellant_I_22 * self.number
+
+        angles = np.linspace(0, 2 * np.pi, self.number, endpoint=False)
+        for angle in angles:
+            x = self.radius * np.cos(angle)
+            y = self.radius * np.sin(angle)
+
+            self._propellant_I_11 += self.motor.propellant_mass * (y**2)
+            self._propellant_I_22 += self.motor.propellant_mass * (x**2)
 
         Izz_term1 = self.motor.propellant_I_33 * self.number
         Izz_term2 = self.motor.propellant_mass * (self.number * self.radius**2)
@@ -190,12 +202,15 @@ class ClusterMotor(Motor):
         m_dry = self.motor.dry_mass
 
         Izz_cluster = self.number * Izz_loc + self.number * m_dry * (self.radius**2)
-        Ixx_cluster = self.number * Ixx_loc + (self.number / 2) * m_dry * (
-            self.radius**2
-        )
-        Iyy_cluster = self.number * Iyy_loc + (self.number / 2) * m_dry * (
-            self.radius**2
-        )
+        Ixx_cluster = self.number * Ixx_loc
+        Iyy_cluster = self.number * Iyy_loc
+
+        angles = np.linspace(0, 2 * np.pi, self.number, endpoint=False)
+        for angle in angles:
+            x = self.radius * np.cos(angle)
+            y = self.radius * np.sin(angle)
+            Ixx_cluster += m_dry * (y**2)
+            Iyy_cluster += m_dry * (x**2)
 
         return (Ixx_cluster, Iyy_cluster, Izz_cluster)
 
