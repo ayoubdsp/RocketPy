@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from rocketpy.mathutils.vector_matrix import Vector
+from rocketpy.motors import HybridMotor, LiquidMotor, SolidMotor
+from rocketpy.rocket.aero_surface import Fin, Fins, NoseCone, Tail
 from rocketpy.rocket.aero_surface.generic_surface import GenericSurface
 
 from .plot_helpers import show_or_save_plot
@@ -250,7 +252,7 @@ class _RocketPlots:
                 self._draw_fins(
                     ax, surface, position.z, drawn_surfaces, vis_args, plane
                 )
-            elif isinstance(surface, Fins):
+            elif isinstance(surface, Fin):
                 self._draw_fin(ax, surface, position, drawn_surfaces, vis_args, plane)
             elif isinstance(surface, GenericSurface):
                 self._draw_generic_surface(
