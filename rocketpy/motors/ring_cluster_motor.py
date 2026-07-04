@@ -1,8 +1,9 @@
 # pylint: disable=invalid-name
 import matplotlib.pyplot as plt
 import numpy as np
-from rocketpy import Function
-from rocketpy.motors import Motor
+
+from ..mathutils.function import Function
+from .motor import Motor
 
 
 class RingClusterMotor(Motor):

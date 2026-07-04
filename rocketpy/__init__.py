@@ -23,6 +23,7 @@ from .motors import (
     MassFlowRateBasedTank,
     Motor,
     PointMassMotor,
+    RingClusterMotor,
     SolidMotor,
     SphericalTank,
     Tank,
